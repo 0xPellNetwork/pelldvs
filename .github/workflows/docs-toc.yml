@@ -1,0 +1,13 @@
+# Verify that important design docs have ToC entries.
+name: Check documentation ToC
+on:
+  pull_request:
+    push:
+      branches:
+        - dev
+jobs:
+  check:
+    runs-on: [ "self-hosted", "Linux", "X64", "ci" ]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4

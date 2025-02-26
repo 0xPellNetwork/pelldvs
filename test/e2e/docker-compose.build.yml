@@ -1,0 +1,35 @@
+services:
+  pelldvs:
+    build:
+      context: ../..
+      dockerfile: test/e2e/docker/pelldvs/Dockerfile
+      args:
+        HTTP_PROXY: ${HTTP_PROXY}
+        HTTPS_PROXY: ${HTTPS_PROXY}
+        GITHUB_TOKEN: ${GITHUB_TOKEN}
+        DEBUG_ENABLED: ${DEBUG_ENABLED:-false}
+        EMULATOR_VERSION: ${EMULATOR_VERSION:-v0.1.1}
+      tags:
+        - "pelldvs/e2e-pelldvs:latest"
+  pelle2e:
+    build:
+      context: ../..
+      dockerfile: test/e2e/docker/pelle2e/Dockerfile
+      args:
+        HTTP_PROXY: ${HTTP_PROXY}
+        HTTPS_PROXY: ${HTTPS_PROXY}
+        GITHUB_TOKEN: ${GITHUB_TOKEN}
+        DEBUG_ENABLED: ${DEBUG_ENABLED:-false}
+      tags:
+        - "pelldvs/e2e-pelle2e:latest"
+  hardhat:
+    build:
+      context: ./
+      dockerfile: ./docker/contracts/Dockerfile
+      args:
+        HTTP_PROXY: ${HTTP_PROXY}
+        HTTPS_PROXY: ${HTTPS_PROXY}
+        GITHUB_TOKEN: ${GITHUB_TOKEN}
+        CONTRACT_VERSION: ${CONTRACT_VERSION:-v0.2.32}
+      tags:
+        - "pelldvs/e2e-hardhat:${CONTRACT_VERSION:-latest}"

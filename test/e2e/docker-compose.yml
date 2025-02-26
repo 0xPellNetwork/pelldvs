@@ -1,0 +1,107 @@
+services:
+  test:
+    image: pelldvs/e2e-pelldvs:latest
+    environment:
+      - ETH_RPC_URL=http://eth:8545
+      - ETH_WS_URL=ws://eth:8545
+      - TIMEOUT_FOR_TASK_PROCESS=${TIMEOUT_FOR_TASK_PROCESS:-10}
+    depends_on:
+      operator:
+        condition: service_started
+    entrypoint: [ "bash", "/root/scripts/test.sh" ]
+    volumes:
+      - ./docker/operator/scripts:/root/scripts
+
+  test-pelle2e:
+    image: pelldvs/e2e-pelle2e:latest
+    environment:
+      - ETH_RPC_URL=http://eth:8545
+      - ETH_WS_URL=ws://eth:8545
+      - TIMEOUT_FOR_TASK_PROCESS=${TIMEOUT_FOR_TASK_PROCESS:-10}
+    depends_on:
+      operator:
+        condition: service_started
+    entrypoint: [ "bash", "/root/scripts/pelle2e-test.sh" ]
+    volumes:
+      - ./docker/pelle2e/scripts:/root/scripts
+
+  operator:
+    image: pelldvs/e2e-pelldvs:latest
+    hostname: operator
+    depends_on:
+      - aggregator
+    environment:
+      - DEBUG_ENABLED=${DEBUG_ENABLED:-false}
+    ports:
+      - "${OPERATOR_HOST_PORT:-26657}:26657"
+      - "4346:${DEBUG_PORT:-2345}"
+    entrypoint: [ "bash", "/root/scripts/start_operator.sh" ]
+    volumes:
+      - ./docker/operator/scripts:/root/scripts
+    healthcheck:
+      test: [ "CMD", "test", "-f", "/root/operator_initialized" ]
+      retries: 3
+      interval: 10s
+
+  aggregator:
+    image: pelldvs/e2e-pelldvs:latest
+    hostname: aggregator
+    depends_on:
+      emulator:
+        condition: service_started
+    environment:
+      - DEBUG_ENABLED=${DEBUG_ENABLED:-false}
+    ports:
+      - "${AGGREGATOR_HOST_PORT:-26653}:26653"
+      - "4345:${DEBUG_PORT:-2345}"
+    entrypoint: [ "bash", "/root/scripts/start_dvs.sh" ]
+    volumes:
+      - ./docker/pelldvs/scripts:/root/scripts
+    healthcheck:
+      test: [ "CMD", "test", "-f", "/root/aggregator_initialized" ]
+      retries: 3
+      interval: 10s
+
+  emulator:
+    image: pelldvs/e2e-pelldvs:latest
+    environment:
+      - ETH_RPC_URL=http://eth:8545
+      - ETH_WS_URL=ws://eth:8545
+    depends_on:
+      hardhat:
+        condition: service_started
+    entrypoint: [ "bash", "/root/scripts/init_emulator.sh" ]
+    ports:
+      - "${EMULATOR_HOST_PORT:-9090}:9090"
+    volumes:
+      - ./docker/pelldvs/scripts:/root/scripts
+    healthcheck:
+      test: [ "CMD", "test", "-f", "/root/emulator_initialized" ]
+      start_period: 50s
+      retries: 3
+      interval: 10s
+
+  hardhat:
+    image: pelldvs/e2e-hardhat:${CONTRACT_VERSION:-latest}
+    volumes:
+      - ./docker/contracts/scripts/docker_init.sh:/app/pell-middleware-contracts/scripts/docker_init.sh
+    environment:
+      - LOCALHOST_URL=http://eth:8545
+    depends_on:
+      eth:
+        condition: service_started
+    healthcheck:
+      test: [ "CMD", "test", "-f", "/app/pell-middleware-contracts/deployments/localhost/contracts-address-dvs.json" ]
+      retries: 3
+      interval: 10s
+      start_period: 120s
+  eth:
+    image: ghcr.io/foundry-rs/foundry:latest
+    ports:
+      - "${ETH_HOST_PORT:-8646}:8545"
+    entrypoint: [ "anvil", "--host", "0.0.0.0", "--chain-id", "1337", "--state", "/tmp/anvil.state.json" ]
+    platform: ${PLATFORM:-linux/amd64}
+    healthcheck:
+      test: [ "CMD", "cast", "block-number" ]
+      retries: 3
+      interval: 10s

@@ -1,0 +1,39 @@
+name: Markdown Linter
+
+permissions:
+  checks: write
+  contents: write
+  pull-requests: write
+
+on:
+  push:
+    branches:
+      - dev
+    paths:
+      - "**.md"
+      - "**.yml"
+      - "**.yaml"
+  pull_request:
+    branches:
+      - dev
+    paths:
+      - "**.md"
+      - "**.yml"
+jobs:
+  build:
+    name: Super linter
+    runs-on: ["self-hosted", "Linux", "X64", "ci"]
+    timeout-minutes: 10
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      - name: Lint Code Base
+        uses: docker://github/super-linter:v4
+        env:
+          VALIDATE_ALL_CODEBASE: true
+          DEFAULT_BRANCH: v0.38.x
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VALIDATE_MD: true
+          VALIDATE_OPENAPI: true
+          VALIDATE_YAML: true
+          YAML_CONFIG_FILE: yaml-lint.yml

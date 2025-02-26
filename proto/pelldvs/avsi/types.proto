@@ -1,0 +1,201 @@
+syntax = "proto3";
+package pelldvs.avsi;
+
+option go_package = "github.com/0xPellNetwork/pelldvs/avsi/types";
+
+// For more information on gogo.proto, see:
+// https://github.com/cosmos/gogoproto/blob/master/extensions.md
+import "pelldvs/crypto/proof.proto";
+import "gogoproto/gogo.proto";
+
+service AVSI {
+  rpc Flush(RequestFlush) returns (ResponseFlush);
+  // query
+  rpc Echo(RequestEcho) returns (ResponseEcho);
+  rpc Info(RequestInfo) returns (ResponseInfo);
+  rpc Query(RequestQuery) returns (ResponseQuery);
+  // dvs request
+  rpc ProcessDVSRequest(RequestProcessDVSRequest) returns (ResponseProcessDVSRequest);
+  rpc ProcessDVSResponse(RequestProcessDVSResponse) returns (ResponseProcessDVSResponse);
+}
+
+//----------------------------------------
+// Request types
+message Request {
+  oneof value {
+    RequestFlush flush = 1;
+    // query
+    RequestEcho  echo  = 2;
+    RequestInfo  info  = 3;
+    RequestQuery query = 4;
+    // dvs
+    RequestProcessDVSRequest  process_dvs_request     = 5;
+    RequestProcessDVSResponse process_dvs_response    = 6;
+  }
+}
+
+// Response types
+message Response {
+  oneof value {
+    ResponseException             exception               = 1;
+    ResponseFlush                 flush                   = 2;
+    ResponseEcho                  echo                    = 3;
+    ResponseInfo                  info                    = 4;
+    ResponseQuery                 query                   = 5;
+    ResponseProcessDVSRequest     process_dvs_request     = 6;
+    ResponseProcessDVSResponse    process_dvs_response    = 7;
+  }
+}
+
+//-----------------------------DVS----------------------------------
+message DVSRequest {
+  bytes                 data                         = 1;
+  int64                 height                       = 2;
+  int64                 chain_id                     = 3;
+  repeated uint32       group_numbers                = 4;
+  repeated uint32       group_threshold_percentages  = 5;
+}
+
+message OperatorPubkeys {
+  bytes g1_pubkey = 1;  // [32]byte
+  bytes g2_pubkey = 2;  // [32]byte
+}
+
+message Operator {
+  bytes id          = 1;  // [32]byte
+  bytes address     = 2;  // [20]byte
+  string meta_uri   = 3;
+  string socket     = 4;
+  int64 stake       = 5;
+  OperatorPubkeys pubkeys = 6;
+}
+
+message RequestProcessDVSRequest {
+  DVSRequest        request = 1;
+  repeated Operator operator = 2;
+}
+
+message RequestProcessDVSResponse {
+  DVSRequest                 dvs_request =1;
+  DVSResponse                dvs_response =2;
+}
+
+message ResponseProcessDVSRequest {
+  uint32          code            = 1;
+  bytes           data            = 2;
+  string          log             = 3;  // nondeterministic
+  string          info            = 4;  // nondeterministic
+  repeated Event  events          = 5
+      [(gogoproto.nullable) = false, (gogoproto.jsontag) = "events,omitempty"];  // nondeterministic
+  string          codespace       = 6;
+  bytes           response        = 7;
+  bytes           response_digest = 8;
+}
+
+message ResponseProcessDVSResponse {
+  uint32          code            = 1;
+  bytes           data            = 2;
+  string          log             = 3;  // nondeterministic
+  string          info            = 4;  // nondeterministic
+  repeated Event  events          = 5
+      [(gogoproto.nullable) = false, (gogoproto.jsontag) = "events,omitempty"];  // nondeterministic
+  string          codespace       = 6;
+}
+
+message Event {
+  string                  type       = 1;
+  repeated EventAttribute attributes = 2 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag)  = "attributes,omitempty"
+  ];
+}
+
+message EventAttribute {
+  string key   = 1;
+  string value = 2;
+  bool   index = 3;  // nondeterministic
+}
+
+//--------------------
+// DVSResponse
+message DVSResponse {
+  bytes                          data                             = 1;
+  string                         error                            = 2;
+  bytes                          hash                             = 3;
+  repeated bytes                 non_signers_pubkeys_g1           = 4;
+  repeated bytes                 group_apks_g1                    = 5;
+  bytes                          signers_apk_g2                   = 6;
+  bytes                          signers_agg_sig_g1               = 7;
+  repeated uint32                non_signer_group_bitmap_indices  = 8;
+  repeated uint32                group_apk_indices                = 9;
+  repeated uint32                total_stake_indices              = 10;
+  repeated NonSignerStakeIndice  non_signer_stake_indices         = 11;
+}
+
+message NonSignerStakeIndice {
+  repeated uint32 non_signer_stake_indice = 1;
+}
+
+//--------------------
+//dvs request result idx
+message DVSRequestResult {
+  DVSRequest                  dvs_request                   = 1;
+  ResponseProcessDVSRequest   response_process_dvs_request  = 2;
+  DVSResponse                 dvs_response                  = 3;
+  ResponseProcessDVSResponse  response_process_dvs_response = 4;
+}
+
+
+// TODO: Adapt to our business logic
+//-----------------------------reserver----------------------------------
+message RequestFlush {}
+
+message ResponseFlush {}
+
+message RequestEcho {
+  string message = 1;
+}
+
+message RequestInfo {
+  string version       = 1;
+  uint64 block_version = 2;
+  uint64 p2p_version   = 3;
+  string abci_version  = 4;
+}
+
+message RequestQuery {
+  bytes  data   = 1;
+  string path   = 2;
+  int64  height = 3;
+  bool   prove  = 4;
+}
+
+message ResponseEcho {
+  string message = 1;
+}
+
+message ResponseInfo {
+  string data                = 1;
+  string version             = 2;
+  uint64 app_version         = 3;
+  int64  last_block_height   = 4;
+  bytes  last_block_app_hash = 5;
+}
+
+message ResponseQuery {
+  uint32 code = 1;
+  // bytes data = 2; // use "value" instead.
+  string                     log       = 3;  // nondeterministic
+  string                     info      = 4;  // nondeterministic
+  int64                      index     = 5;
+  bytes                      key       = 6;
+  bytes                      value     = 7;
+  pelldvs.crypto.ProofOps proof_ops = 8;
+  int64                      height    = 9;
+  string                     codespace = 10;
+}
+
+// nondeterministic
+message ResponseException {
+  string error = 1;
+}

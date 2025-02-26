@@ -1,0 +1,30 @@
+name: Check for Go vulnerabilities
+# Runs https://pkg.go.dev/golang.org/x/vuln/cmd/govulncheck to proactively
+# check for vulnerabilities in code packages if there were any changes made to
+# any Go code or dependencies.
+#
+# Run `make vulncheck` from the root of the repo to run this workflow locally.
+on:
+  pull_request:
+  push:
+    branches:
+      - dev
+jobs:
+  govulncheck:
+    runs-on: [ "self-hosted", "Linux", "X64", "ci" ]
+    timeout-minutes: 20
+    env:
+      GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+      TAG: ${{ github.event.pull_request.head.sha || github.workflow_sha }}
+    steps:
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+          check-latest: true
+          cache: false
+      - uses: actions/checkout@v4
+      - name: private
+        run: git config --global url."https://${GITHUB_TOKEN}:x-oauth-basic@github.com/0xPellNetwork".insteadOf "https://github.com/0xPellNetwork"
+      - name: govulncheck
+        run: make vulncheck
+        # if: "env.GIT_DIFF != ''"

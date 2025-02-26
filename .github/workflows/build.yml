@@ -1,0 +1,52 @@
+name: Build
+# Tests runs different tests (test_avsi_apps, test_avsi_cli, test_apps)
+# This workflow runs on every push to v0.38.x and every pull request
+# All jobs will pass without running if no *{.go, .mod, .sum} files have been modified
+on:
+  pull_request:
+  push:
+    branches:
+      - dev
+jobs:
+  build:
+    name: Build
+    runs-on: ["self-hosted", "Linux", "X64", "ci"]
+    strategy:
+      fail-fast: false
+      matrix:
+        goarch: ["arm", "amd64"]
+        goos: ["linux"]
+    timeout-minutes: 10
+    env:
+      GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+      TAG: ${{ github.event.pull_request.head.sha || github.workflow_sha }}
+    steps:
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+          cache: false
+      - uses: actions/checkout@v4
+      - name: private
+        run: git config --global url."https://${GITHUB_TOKEN}:x-oauth-basic@github.com/0xPellNetwork".insteadOf "https://github.com/0xPellNetwork"
+      - name: install
+        run: GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} make build
+        # if: "env.GIT_DIFF != ''"
+  test_avsi_cli:
+    runs-on: ["self-hosted", "Linux", "X64", "ci"]
+    needs: build
+    timeout-minutes: 10
+    env:
+      GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+      TAG: ${{ github.event.pull_request.head.sha || github.workflow_sha }}
+    steps:
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+          cache: false
+      - uses: actions/checkout@v4
+      - name: private
+        run: git config --global url."https://${GITHUB_TOKEN}:x-oauth-basic@github.com/0xPellNetwork".insteadOf "https://github.com/0xPellNetwork"
+      - name: install
+        run: make install_avsi
+      - run: avsi/tests/test_cli/test.sh
+        shell: bash

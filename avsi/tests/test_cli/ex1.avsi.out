@@ -1,0 +1,25 @@
+> echo hello
+-> code: OK
+-> data: hello
+-> data.hex: 0x68656C6C6F
+
+> info 
+-> code: OK
+
+> query "abc"
+-> code: OK
+-> height: 0
+-> key: abc
+-> key.hex: 616263
+
+> query "def"
+-> code: OK
+-> height: 0
+-> key: def
+-> key.hex: 646566
+
+> request keykeykey valuevalue
+-> code: OK
+-> data: keykeykey
+-> data.hex: 0x6B65796B65796B6579
+

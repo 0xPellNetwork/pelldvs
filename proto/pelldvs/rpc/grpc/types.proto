@@ -1,0 +1,33 @@
+syntax = "proto3";
+package pelldvs.rpc.grpc;
+option  go_package = "github.com/0xPellNetwork/pelldvs/rpc/grpc;coregrpc";
+
+
+//----------------------------------------
+// Request types
+
+message RequestPing {}
+
+message DVSRequest {
+}
+
+//----------------------------------------
+// Response types
+message ResponsePing {}
+
+//SendDVSTask
+message ResponseDVSRequest {}
+message ResultDvsRequestCommit{}
+message ResultRequestDvsAsync {}
+
+
+message QueryDvsRequestParam {
+  bytes    hash    =1;
+}
+
+service DVSRequestAPI {
+  rpc Ping(RequestPing) returns (ResponsePing);
+  rpc RequestDvsSync(DVSRequest) returns (ResultDvsRequestCommit);
+  rpc RequestDvsAsync(DVSRequest) returns (ResultRequestDvsAsync);
+  rpc QueryDvsRequest(QueryDvsRequestParam) returns (ResultDvsRequestCommit);
+}

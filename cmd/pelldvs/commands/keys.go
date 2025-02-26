@@ -10,7 +10,7 @@ import (
 func KeysCmd(p utils.Prompter) *cobra.Command {
 	var keysCmd = &cobra.Command{
 		Use:     "keys",
-		Short:   "Manage the keys used in BinLayer ecosystem",
+		Short:   "Manage the keys used in PellDVS ecosystem",
 		Aliases: []string{"k"},
 	}
 

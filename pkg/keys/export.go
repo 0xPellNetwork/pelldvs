@@ -34,7 +34,7 @@ use --key-type ecdsa/bls to export ecdsa/bls key.
 
 It will prompt for password to encrypt the key.
 
-This command will import keys from $HOME/.binlayer/keys/ location
+This command will import keys from $HOME/.pelldvs/keys/ location
 
 But if you want it to export from a different location, use --key-path flag`,
 		Args: cobra.ExactArgs(1),

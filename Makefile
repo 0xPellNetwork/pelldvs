@@ -124,8 +124,6 @@ testdata-metrics:
 #? mockery: Generate test mocks
 mockery:
 	go generate -run="./scripts/mockery_generate.sh" ./...
-	#go install go.uber.org/mock/mockgen@v0.4.0
-#	go generate ./...
 .PHONY: mockery
 
 ###############################################################################

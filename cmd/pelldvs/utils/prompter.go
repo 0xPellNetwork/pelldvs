@@ -8,6 +8,8 @@ import (
 )
 
 // Prompter is an interface for prompting the user for input.
+//
+//go:generate ../../../scripts/mockery_generate.sh Prompter
 type Prompter interface {
 	Select(prompt string, options []string) (string, error)
 	InputString(prompt, defValue, help string, validator func(string) error) (string, error)

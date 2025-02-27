@@ -45,9 +45,9 @@ It will prompt for password to encrypt the key, which is optional but highly rec
 If you want to create a key with weak/no password, use --insecure flag. Do NOT use those keys in production
 
 This command also support piping the password from stdin.
-For example: echo "password" | binlayer keys create --key-type ecdsa keyname
+For example: echo "password" | pelldvs keys create --key-type ecdsa keyname
 
-This command will create keys in $HOME/.binlayer/keys/ location
+This command will create keys in $HOME/.pelldvs/keys/ location
 		`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {

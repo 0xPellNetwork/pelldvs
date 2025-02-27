@@ -32,9 +32,9 @@ It will prompt for password to encrypt the key, which is optional but highly rec
 If you want to import a key with weak/no password, use --insecure flag. Do NOT use those keys in production
 
 This command also support piping the password from stdin.
-For example: echo "password" | binlayer keys import --key-type ecdsa keyname privateKey
+For example: echo "password" | pelldvs keys import --key-type ecdsa keyname privateKey
 
-This command will import keys in $HOME/.binlayer/keys/ location
+This command will import keys in $HOME/.pelldvs/keys/ location
 		`,
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {

@@ -38,12 +38,8 @@ function init_pelldvs_config {
 
   update-config aggregator_rpc_url "$AGGREGATOR_RPC_URL"
 
-  ## FIXME: operator_bls_private_key_store_path should be in the config template.
   ## FIXME: don't use absolute path for key
   update-config operator_bls_private_key_store_path "$PELLDVS_HOME/keys/$OPERATOR_KEY_NAME.bls.key.json"
-
-  ## FIXME: operator_ecdsa_private_key_store_path should be in the config template.
-  ## FIXME: don't use absolute path for key
   update-config operator_ecdsa_private_key_store_path "$PELLDVS_HOME/keys/$OPERATOR_KEY_NAME.ecdsa.key.json"
 
   update-config interactor_config_path "$PELLDVS_HOME/config/interactor_config.json"

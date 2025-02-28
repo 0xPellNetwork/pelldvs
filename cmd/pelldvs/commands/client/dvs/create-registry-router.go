@@ -22,28 +22,16 @@ import (
 var createRegistryRouterFlagInitOwner = &chainflags.StringFlag{
 	Name:  "initial-owner",
 	Usage: "the initial owner of the contract",
-	Aliases: chainflags.NewAliases(
-		"initial_owner",
-		"initialOwner",
-	),
 }
 
 var createRegistryRouterFlagDVSChainApprover = &chainflags.StringFlag{
 	Name:  "dvs-chain-approver",
 	Usage: "the churn approver of the contract",
-	Aliases: chainflags.NewAliases(
-		"dvs_chain_approver",
-		"dvsChainApprover",
-	),
 }
 
 var createRegistryRouterFlagChurnApprover = &chainflags.StringFlag{
 	Name:  "churn-approver",
 	Usage: "the churn approver of the contract",
-	Aliases: chainflags.NewAliases(
-		"churn_approver",
-		"churnApprover",
-	),
 }
 
 var createRegistryRouterFlagEjector = &chainflags.StringFlag{
@@ -64,30 +52,18 @@ var createRegistryRouterFlagUnpauser = &chainflags.StringFlag{
 var createRegistryRouterFlagInitialPausedStatus = &chainflags.StringFlag{
 	Name:  "initial-paused-status",
 	Usage: "the initial paused status of the contract",
-	Aliases: chainflags.NewAliases(
-		"initial_paused_status",
-		"initialPausedStatus",
-	),
 }
 
 // save to file flag
 var createRegistryRouterFlagSaveToFile = &chainflags.StringFlag{
 	Name:  "save-to-file",
 	Usage: "save the contract address to file",
-	Aliases: chainflags.NewAliases(
-		"save_to_file",
-		"saveToFile",
-	),
 }
 
 // save to file flag
 var createRegistryRouterFlagForceSave = &chainflags.StringFlag{
 	Name:  "force-save",
 	Usage: "force save the contract address to file",
-	Aliases: chainflags.NewAliases(
-		"force_save",
-		"forceSave",
-	),
 }
 
 func init() {

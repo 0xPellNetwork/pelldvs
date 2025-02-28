@@ -7,11 +7,8 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/spf13/cobra"
 
-	"github.com/0xPellNetwork/pelldvs-libs/crypto/ecdsa"
-	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/chains/chainflags"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/client/utils"
 	pellcfg "github.com/0xPellNetwork/pelldvs/config"
-	"github.com/0xPellNetwork/pelldvs/pkg/keys"
 )
 
 var delegationApproverCmd = &cobra.Command{
@@ -22,30 +19,29 @@ var delegationApproverCmd = &cobra.Command{
   /**
    * @notice Returns the handleDelegationApprover account for an operator
    */
+
+pelldvs query operator delegation-approver \
+	--from <key-name> \
+	--rpc-url <rpc-url> \
+	--delegation-manager <delegation-manager> \
+	<operator-address>
+
 `,
 	Example: `
-
-pelldvs query operator delegation-approver --from <key-name> <operator-address>
-
-pelldvs query operator delegation-approver --from pell-localnet-deployer 0xa0Ee7A142d267C1f36714E4a8F75612F20a79720
-pelldvs query operator delegation-approver --from pell-localnet-deployer 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+pelldvs query operator delegation-approver \
+	--from pell-localnet-deployer \
+	--rpc-url http://localhost:8545 \
+	--delegation-manager 0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f \
+	0xa0Ee7A142d267C1f36714E4a8F75612F20a79720
 
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return handleDelegationApprover(cmd, chainflags.FromKeyNameFlag.Value, args[0])
+		return handleDelegationApprover(cmd, args[0])
 	},
 }
 
-func handleDelegationApprover(cmd *cobra.Command, keyName string,
-	operatorAddr string,
-) error {
-
-	kpath := keys.GetKeysPath(pellcfg.CmtConfig, keyName)
-	if !kpath.IsECDSAExist() {
-		return fmt.Errorf("ECDSA key does not exist %s", kpath.ECDSA)
-	}
-
-	result, err := execDelegationApprover(cmd, kpath.ECDSA, operatorAddr)
+func handleDelegationApprover(cmd *cobra.Command, operatorAddr string) error {
+	result, err := execDelegationApprover(cmd, operatorAddr)
 	if err != nil {
 		return fmt.Errorf("failed to create group: %v", err)
 	}
@@ -60,31 +56,43 @@ func handleDelegationApprover(cmd *cobra.Command, keyName string,
 	return err
 }
 
-func execDelegationApprover(cmd *cobra.Command, privKeyPath string, operator string) (string, error) {
+func execDelegationApprover(cmd *cobra.Command, operator string) (string, error) {
 	logger.Info(
-		"handleDelegationApprover",
-		"ethRPCURL", chainflags.EthRPCURLFlag.Value,
-		"privKeyPath", privKeyPath,
+		utils.GetPrettyCommandName(cmd),
 		"operator", operator,
 	)
 
 	ctx := context.Background()
-	address, err := ecdsa.GetAddressFromKeyStoreFile(privKeyPath)
+	cfg, err := utils.LoadChainConfig(cmd, pellcfg.CmtConfig.Pell.InteractorConfigPath, logger)
 	if err != nil {
-		return "", fmt.Errorf("failed to get address from key store file: %v", err)
+		logger.Error("failed to load chain config", "err", err, "file", pellcfg.CmtConfig.Pell.InteractorConfigPath)
+		return "", err
 	}
 
-	chainOp, _, err := utils.NewOperatorFromFile(cmd, pellcfg.CmtConfig.Pell.InteractorConfigPath, logger)
+	logger.Info("chain config details", "chaincfg", fmt.Sprintf("%+v", cfg))
+
+	var chainConfigChecker = utils.NewChainConfigChecker(cfg)
+	if !chainConfigChecker.HasRPCURL() {
+		return "", fmt.Errorf("rpc url is required")
+	}
+	if !chainConfigChecker.IsValidPellDelegationManager() {
+		return "", fmt.Errorf("pell delegation manager is required")
+	}
+
+	chainOp, err := utils.NewOperatorFromCfg(cfg, logger)
 	if err != nil {
-		logger.Error("failed to create operator", "err", err)
+		logger.Error("failed to create chain operator",
+			"err", err,
+			"file", pellcfg.CmtConfig.Pell.InteractorConfigPath,
+			"cfg", fmt.Sprintf("%+v", cfg),
+		)
 		return "", err
 	}
 
 	result, err := chainOp.GetDelegationApprover(&bind.CallOpts{Context: ctx}, operator)
 
 	logger.Info(
-		"handleDelegationApprover",
-		"address", address,
+		utils.GetPrettyCommandName(cmd),
 		"result", result,
 	)
 

@@ -107,18 +107,24 @@ function set_operator_address() {
 
 function register_operator_on_pell {
   OPERATOR_METADATA_URI=https://raw.githubusercontent.com/matthew7251/Metadata/main/Matthew_Metadata.json
+  PELL_DELEGATION_MNAGER=$(ssh hardhat "cat $HARDHAT_CONTRACTS_PATH/PellDelegationManager-Proxy.json" | jq -r .address)
   pelldvs client operator register-operator \
     --home $PELLDVS_HOME \
     --from $OPERATOR_KEY_NAME \
+    --rpc-url $ETH_RPC_URL \
+    --delegation-manager $PELL_DELEGATION_MNAGER \
     --metadata-uri $OPERATOR_METADATA_URI
 
   show_operator_registered "$OPERATOR_ADDRESS"
 }
 
 function register_operator_to_dvs {
+  REGISTRY_ROUTER_ADDRESS=$(ssh emulator "cat /root/RegistryRouterAddress.json" | jq -r .address)
   pelldvs client operator register-operator-to-dvs \
     --home $PELLDVS_HOME \
     --from $OPERATOR_KEY_NAME \
+    --rpc-url $ETH_RPC_URL \
+    --registry-router $REGISTRY_ROUTER_ADDRESS \
     --groups 0 \
     --socket http://operator:26657
   show_dvs_operator_info $OPERATOR_ADDRESS

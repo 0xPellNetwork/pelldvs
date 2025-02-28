@@ -48,12 +48,24 @@ var registerOperatorToDVSCmd = &cobra.Command{
 
    * @param groupNumbers is an ordered byte array containing the group numbers being registered for
    * @param socket is the socket of the operator (typically an IP address)
+
+pelldvs client operator register-operator-to-dvs \
+	--from <key-name> \
+	--rpc-url <rpc-url> \
+	--registry-router <registry-router> \
+	--dvs-directory <dvs-directory> \
+	--groups <group-number> \
+	--socket <socket>
 `,
 	Example: `
 
-pelldvs client operator register-operator-to-dvs --from <key-name>  --groups <group-number> --socket <socket>
-
-pelldvs client operator register-operator-to-dvs --from pell-localnet-deployer --groups 0 --socket http://127.0.0.1:8005
+pelldvs client operator register-operator-to-dvs \
+	--from pell-localnet-deployer \
+	--rpc-url http://localhost:8545 \
+	--registry-router 0x1234567890123456789012345678901234567890 \
+	--dvs-directory 0x1234567890123456789012345678901234567890 \
+	--groups 0 \
+	--socket http://127.0.0.1:8005
 
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -88,8 +100,7 @@ func handleRegisterOperatorToDVS(cmd *cobra.Command, groupNumbersStr string, soc
 
 func execRegisterOperatorToDVS(cmd *cobra.Command, privKeyPath, blsKeyPath string, groupNumbers []uint8, socket string) (*gethtypes.Receipt, error) {
 	logger.Info(
-		"handleRegisterOperatorToDVS",
-		"ethRPCURL", chainflags.EthRPCURLFlag.Value,
+		utils.GetPrettyCommandName(cmd),
 		"privKeyPath", privKeyPath,
 		"groupNumbers", groupNumbers,
 		"socket", socket,
@@ -110,16 +121,38 @@ func execRegisterOperatorToDVS(cmd *cobra.Command, privKeyPath, blsKeyPath strin
 		return nil, fmt.Errorf("failed to read ecdsa key: %v", err)
 	}
 
-	chainOp, _, err := utils.NewOperatorFromFile(cmd, pellcfg.CmtConfig.Pell.InteractorConfigPath, logger)
+	cfg, err := utils.LoadChainConfig(cmd, pellcfg.CmtConfig.Pell.InteractorConfigPath, logger)
 	if err != nil {
-		logger.Error("failed to create operator", "err", err)
+		logger.Error("failed to load chain config", "err", err, "file", pellcfg.CmtConfig.Pell.InteractorConfigPath)
+		return nil, err
+	}
+	logger.Info("chain config details", "chaincfg", fmt.Sprintf("%+v", cfg))
+
+	var chainConfigChecker = utils.NewChainConfigChecker(cfg)
+	if !chainConfigChecker.HasRPCURL() {
+		return nil, fmt.Errorf("rpc url is required")
+	}
+	if !chainConfigChecker.IsValidPellRegistryRouter() {
+		return nil, fmt.Errorf("pell registry router is required")
+	}
+	if !chainConfigChecker.IsValidPellDVSDirectory() {
+		return nil, fmt.Errorf("pell dvs directory is required")
+	}
+
+	chainOp, err := utils.NewOperatorFromCfg(cfg, logger)
+	if err != nil {
+		logger.Error("failed to create chain operator",
+			"err", err,
+			"file", pellcfg.CmtConfig.Pell.InteractorConfigPath,
+			"cfg", fmt.Sprintf("%+v", cfg),
+		)
 		return nil, err
 	}
 
 	receipt, err := chainOp.RegisterToDVS(ctx, ecdsaPrivKey, blsKeyPair, groupNumbers, socket)
 
 	logger.Info(
-		"handleRegisterOperatorToDVS",
+		utils.GetPrettyCommandName(cmd),
 		"address", address,
 		"receipt", receipt,
 	)

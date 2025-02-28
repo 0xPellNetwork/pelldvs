@@ -27,10 +27,21 @@ var updateOperatorsCmd = &cobra.Command{
    * @dev stakes are queried from the PellNetwork core DelegationManager contract
    * @param operators a list of operator addresses to update
    */
+
+pelldvs client dvs update-operators \
+	--from <key-name> \
+	--rpc-url <rpc-url> \
+	--registry-router <registry-router> \
+	"<address1,address2,...>"
+
+
 `,
 	Example: `
-pelldvs client dvs update-operators --from <key-name> "<address1,address2,...>"
-pelldvs client dvs update-operators --from pell-localnet-deployer "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266,0x14dC79964da2C08b23698B3D3cc7Ca32193d9955"
+pelldvs client dvs update-operators \
+	--from pell-localnet-deployer \
+	--rpc-url http://localhost:8545 \
+	--registry-router 0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f \
+	"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266,0x14dC79964da2C08b23698B3D3cc7Ca32193d9955"
 
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -81,10 +92,8 @@ func handleUpdateOperators(cmd *cobra.Command, operators string) error {
 }
 
 func execUpdateOperators(cmd *cobra.Command, privKeyPath string, addresses []string) (*gethtypes.Receipt, error) {
-
 	logger.Info(
-		"execUpdateOperators",
-		"ethRPCURL", chainflags.EthRPCURLFlag.Value,
+		utils.GetPrettyCommandName(cmd),
 		"privKeyPath", privKeyPath,
 		"addresses", addresses,
 	)
@@ -95,16 +104,35 @@ func execUpdateOperators(cmd *cobra.Command, privKeyPath string, addresses []str
 		return nil, fmt.Errorf("failed to get address from key store file: %v", err)
 	}
 
-	chainDVS, _, err := utils.NewDVSFromFromFile(cmd, pellcfg.CmtConfig.Pell.InteractorConfigPath, logger)
+	cfg, err := utils.LoadChainConfig(cmd, pellcfg.CmtConfig.Pell.InteractorConfigPath, logger)
 	if err != nil {
-		logger.Error("failed to create operator", "err", err, "file", pellcfg.CmtConfig.Pell.InteractorConfigPath)
+		logger.Error("failed to load chain config", "err", err, "file", pellcfg.CmtConfig.Pell.InteractorConfigPath)
+		return nil, err
+	}
+	logger.Info("chain config details", "chaincfg", fmt.Sprintf("%+v", cfg))
+
+	var chainConfigChecker = utils.NewChainConfigChecker(cfg)
+	if !chainConfigChecker.HasRPCURL() {
+		return nil, fmt.Errorf("rpc url is required")
+	}
+	if !chainConfigChecker.IsValidPellRegistryRouter() {
+		return nil, fmt.Errorf("pell registry router is required")
+	}
+
+	chainDVS, err := utils.NewDVSFromCfg(cfg, logger)
+	if err != nil {
+		logger.Error("failed to create chainDVS",
+			"err", err,
+			"file", pellcfg.CmtConfig.Pell.InteractorConfigPath,
+			"cfg", fmt.Sprintf("%+v", cfg),
+		)
 		return nil, err
 	}
 
 	receipt, err := chainDVS.UpdateOperators(ctx, addresses)
 
 	logger.Info(
-		"execUpdateOperators",
+		utils.GetPrettyCommandName(cmd),
 		"k", "v",
 		"address", address,
 		"receipt", receipt,

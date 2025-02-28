@@ -24,12 +24,21 @@ var setEjectorCmd = &cobra.Command{
    * @param _ejector the new ejector
    * @dev only callable by the owner
    */
+
+pelldvs client dvs set-ejector \
+	--from <key-name> \
+	--rpc-url <rpc-url> \
+	--registry-router <registry-router> \
+	<ejector-address>
+
 `,
 	Args: cobra.ExactArgs(1),
 	Example: `
-
-pelldvs client dvs set-ejector --from pell-localnet-deployer <address>
-pelldvs client dvs set-ejector --from pell-localnet-deployer 0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f
+pelldvs client dvs set-ejector \
+	--from pell-localnet-deployer \
+	--rpc-url http://127.0.0.1:8545 \
+	--registry-router 0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f \
+0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f
 
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -58,8 +67,7 @@ func handleSetEjector(cmd *cobra.Command, ejector string) error {
 }
 
 func execSetEjector(cmd *cobra.Command, privKeyPath string, ejector string) (*gethtypes.Receipt, error) {
-	cmdName := "handleSetEjector"
-
+	cmdName := utils.GetPrettyCommandName(cmd)
 	logger.Info(cmdName,
 		"privKeyPath", privKeyPath,
 		"ejector", ejector,
@@ -74,9 +82,28 @@ func execSetEjector(cmd *cobra.Command, privKeyPath string, ejector string) (*ge
 		"sender", senderAddress,
 	)
 
-	chainDVS, _, err := utils.NewDVSFromFromFile(cmd, pellcfg.CmtConfig.Pell.InteractorConfigPath, logger)
+	cfg, err := utils.LoadChainConfig(cmd, pellcfg.CmtConfig.Pell.InteractorConfigPath, logger)
 	if err != nil {
-		logger.Error("failed to create operator", "err", err, "file", pellcfg.CmtConfig.Pell.InteractorConfigPath)
+		logger.Error("failed to load chain config", "err", err, "file", pellcfg.CmtConfig.Pell.InteractorConfigPath)
+		return nil, err
+	}
+	logger.Info("chain config details", "chaincfg", fmt.Sprintf("%+v", cfg))
+
+	var chainConfigChecker = utils.NewChainConfigChecker(cfg)
+	if !chainConfigChecker.HasRPCURL() {
+		return nil, fmt.Errorf("rpc url is required")
+	}
+	if !chainConfigChecker.IsValidPellRegistryRouter() {
+		return nil, fmt.Errorf("pell registry router is required")
+	}
+
+	chainDVS, err := utils.NewDVSFromCfg(cfg, logger)
+	if err != nil {
+		logger.Error("failed to create chainDVS",
+			"err", err,
+			"file", pellcfg.CmtConfig.Pell.InteractorConfigPath,
+			"cfg", fmt.Sprintf("%+v", cfg),
+		)
 		return nil, err
 	}
 

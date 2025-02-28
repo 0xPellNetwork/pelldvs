@@ -40,35 +40,45 @@ func init() {
 var addPoolsCmd = &cobra.Command{
 	Use:   "add-pools",
 	Short: "add pools",
+	Long: `
+pelldvs client dvs add-pools \
+	--from <key-name> \
+	--rpc-url <rpc-url> \
+	--registry-router <registry-router> \
+	--group <group> \
+	--config <group-config-json-path>
+`,
 	Example: `
-pelldvs client dvs add-pools --from <key-name> --group 0 --config <group-config-json-path>
-pelldvs client dvs add-pools --from pell-localnet-deployer --group 0 --config /data/pells/dvsreqs2/create-group-1.json
+pelldvs client dvs add-pools \
+	--from pell-localnet-deployer \
+	--rpc-url http://localhost:8545 \
+	--registry-router 0x1234567890123456789012345678901234567890 \
+	--group 1 \
+	--config /path/to/group-config.json
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		groupNumber, err := chainutils.ConvStrToUint8(addPoolsCmdFlagGroupNumber.Value)
-		if err != nil {
-			return fmt.Errorf("failed to convert group number %s to uint8: %v", addPoolsCmdFlagGroupNumber.Value, err)
-		}
-		return handleAddPools(cmd,
-			groupNumber,
-			addPoolsFlagConfigFile.Value,
-		)
+		return handleAddPools(cmd)
 	},
 }
 
-func handleAddPools(cmd *cobra.Command, groupNumber uint8, paramFilePath string) error {
+func handleAddPools(cmd *cobra.Command) error {
+	groupNumber, err := chainutils.ConvStrToUint8(addPoolsCmdFlagGroupNumber.Value)
+	if err != nil {
+		return fmt.Errorf("failed to convert group number %s to uint8: %v", addPoolsCmdFlagGroupNumber.Value, err)
+	}
+
 	kpath := keys.GetKeysPath(pellcfg.CmtConfig, chainflags.FromKeyNameFlag.Value)
 	if !kpath.IsECDSAExist() {
 		return fmt.Errorf("ECDSA key does not exist %s", kpath.ECDSA)
 	}
 
 	// TODO(jimmy):  password support
-	if !cmtos.FileExists(paramFilePath) {
-		return fmt.Errorf("param file does not exist %s", paramFilePath)
+	if !cmtos.FileExists(addPoolsFlagConfigFile.Value) {
+		return fmt.Errorf("param file does not exist %s", addPoolsFlagConfigFile.Value)
 	}
 
 	var addPoolsParam chaintypes.AddPoolsRequest
-	err := decodeJSONFromFile(paramFilePath, &addPoolsParam)
+	err = decodeJSONFromFile(addPoolsFlagConfigFile.Value, &addPoolsParam)
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal addPoolsParam: %v", err)
 	}
@@ -89,8 +99,7 @@ func handleAddPools(cmd *cobra.Command, groupNumber uint8, paramFilePath string)
 }
 
 func execAddPools(cmd *cobra.Command, params chaintypes.AddPoolsRequest, privKeyPath string) (*gethtypes.Receipt, error) {
-	cmdName := "handleAddPools"
-
+	cmdName := utils.GetPrettyCommandName(cmd)
 	logger.Info(fmt.Sprintf("%s start", cmdName),
 		"privKeyPath", privKeyPath,
 		"groupNumber", params.GroupNumber,
@@ -107,9 +116,28 @@ func execAddPools(cmd *cobra.Command, params chaintypes.AddPoolsRequest, privKey
 		"sender", senderAddress,
 	)
 
-	chainDVS, _, err := utils.NewDVSFromFromFile(cmd, pellcfg.CmtConfig.Pell.InteractorConfigPath, logger)
+	cfg, err := utils.LoadChainConfig(cmd, pellcfg.CmtConfig.Pell.InteractorConfigPath, logger)
 	if err != nil {
-		logger.Error("failed to create operator", "err", err, "file", pellcfg.CmtConfig.Pell.InteractorConfigPath)
+		logger.Error("failed to load chain config", "err", err, "file", pellcfg.CmtConfig.Pell.InteractorConfigPath)
+		return nil, err
+	}
+	logger.Info("chain config details", "chaincfg", fmt.Sprintf("%+v", cfg))
+
+	var chainConfigChecker = utils.NewChainConfigChecker(cfg)
+	if !chainConfigChecker.HasRPCURL() {
+		return nil, fmt.Errorf("rpc url is required")
+	}
+	if !chainConfigChecker.IsValidPellRegistryRouter() {
+		return nil, fmt.Errorf("pell registry router is required")
+	}
+
+	chainDVS, err := utils.NewDVSFromCfg(cfg, logger)
+	if err != nil {
+		logger.Error("failed to create chainDVS",
+			"err", err,
+			"file", pellcfg.CmtConfig.Pell.InteractorConfigPath,
+			"cfg", fmt.Sprintf("%+v", cfg),
+		)
 		return nil, err
 	}
 

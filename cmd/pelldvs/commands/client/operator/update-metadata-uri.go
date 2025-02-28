@@ -20,22 +20,29 @@ var updateOperatorMetadataURICmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	Long: ` Called by an operator to emit an OperatorMetadataURIUpdated event indicating the information has updated.
    * @param metadataURI The URI for metadata associated with an operator
+
+pelldvs client operator update-metadata-uri \
+	--from <key-name> \
+	--rpc-url <rpc-url> \
+	--delegation-manager <delegation-manager> \
+	<metadataURI>
 `,
-
 	Example: `
-
-pelldvs client operator update-metadata-uri --from <key-name> <metadataURI>
-pelldvs client operator update-metadata-uri --from pell-localnet-deployer 'https://raw.githubusercontent.com/a/b/c.json'
+pelldvs client operator update-metadata-uri \
+	--from pell-localnet-deployer \
+	--rpc-url http://localhost:8545 \
+	--delegation-manager 0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f \
+	'https://raw.githubusercontent.com/a/b/c.json'
 
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		uri := args[0]
-		return handleUpdateOperatorMetadataURI(cmd, chainflags.FromKeyNameFlag.Value, uri)
+		return handleUpdateOperatorMetadataURI(cmd, uri)
 	},
 }
 
-func handleUpdateOperatorMetadataURI(cmd *cobra.Command, keyName string, uri string) error {
-	kpath := keys.GetKeysPath(pellcfg.CmtConfig, keyName)
+func handleUpdateOperatorMetadataURI(cmd *cobra.Command, uri string) error {
+	kpath := keys.GetKeysPath(pellcfg.CmtConfig, chainflags.FromKeyNameFlag.Value)
 	if !kpath.IsECDSAExist() {
 		return fmt.Errorf("ECDSA key does not exist %s", kpath.ECDSA)
 	}
@@ -52,8 +59,7 @@ func handleUpdateOperatorMetadataURI(cmd *cobra.Command, keyName string, uri str
 
 func execUpdateOperatorMetadataURI(cmd *cobra.Command, privKeyPath string, uri string) (*gethtypes.Receipt, error) {
 	logger.Info(
-		"handleUpdateOperatorMetadataURI",
-		"ethRPCURL", chainflags.EthRPCURLFlag.Value,
+		utils.GetPrettyCommandName(cmd),
 		"privKeyPath", privKeyPath,
 		"uri", uri,
 	)
@@ -64,16 +70,35 @@ func execUpdateOperatorMetadataURI(cmd *cobra.Command, privKeyPath string, uri s
 		return nil, fmt.Errorf("failed to get address from key store file: %v", err)
 	}
 
-	chainOp, _, err := utils.NewOperatorFromFile(cmd, pellcfg.CmtConfig.Pell.InteractorConfigPath, logger)
+	cfg, err := utils.LoadChainConfig(cmd, pellcfg.CmtConfig.Pell.InteractorConfigPath, logger)
 	if err != nil {
-		logger.Error("failed to create operator", "err", err)
+		logger.Error("failed to load chain config", "err", err, "file", pellcfg.CmtConfig.Pell.InteractorConfigPath)
+		return nil, err
+	}
+	logger.Info("chain config details", "chaincfg", fmt.Sprintf("%+v", cfg))
+
+	var chainConfigChecker = utils.NewChainConfigChecker(cfg)
+	if !chainConfigChecker.HasRPCURL() {
+		return nil, fmt.Errorf("rpc url is required")
+	}
+	if !chainConfigChecker.IsValidPellDelegationManager() {
+		return nil, fmt.Errorf("pell delegation manager is required")
+	}
+
+	chainOp, err := utils.NewOperatorFromCfg(cfg, logger)
+	if err != nil {
+		logger.Error("failed to create chain operator",
+			"err", err,
+			"file", pellcfg.CmtConfig.Pell.InteractorConfigPath,
+			"cfg", fmt.Sprintf("%+v", cfg),
+		)
 		return nil, err
 	}
 
 	receipt, err := chainOp.UpdateMetadataURI(ctx, uri)
 
 	logger.Info(
-		"handleUpdateOperatorMetadataURI",
+		utils.GetPrettyCommandName(cmd),
 		"address", address,
 		"receipt", receipt,
 	)

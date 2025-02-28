@@ -52,3 +52,8 @@ var GroupNumbers = &StringFlag{
 	Name:  "groups",
 	Usage: "group numbers",
 }
+
+var MetadataURI = &StringFlag{
+	Name:  "metadata-uri",
+	Usage: "metadata URI",
+}

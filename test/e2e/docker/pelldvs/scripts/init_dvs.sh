@@ -47,20 +47,20 @@ function update_pelldvs_config {
     "indexer_start_height": $AGGREGATOR_INDEXER_START_HEIGHT,
     "indexer_batch_size": $AGGREGATOR_INDEXER_BATCH_SIZE,
     "contract_config": {
-			"pell_registry_router_factory": "$REGISTRY_ROUTER_FACTORY_ADDRESS",
-    	"pell_dvs_directory": "$PELL_DVS_DIRECTORY",
-    	"pell_delegation_manager": "$PELL_DELEGATION_MNAGER",
-    	"pell_registry_router": "$REGISTRY_ROUTER_ADDRESS",
-			"dvs_configs": {
-				"$CHAIN_ID": {
-					"chain_id": $CHAIN_ID,
-					"rpc_url": "$SERVICE_CHAIN_RPC_URL",
-					"operator_info_provider": "$DVS_OPERATOR_INFO_PROVIDER",
-					"operator_key_manager": "$DVS_OPERATOR_KEY_MANAGER",
-					"central_scheduler": "$DVS_CENTRAL_SCHEDULER",
-					"operator_index_manager": "$DVS_OPERATOR_INDEX_MANAGER"
-				}
-			}
+      "pell_registry_router_factory": "$REGISTRY_ROUTER_FACTORY_ADDRESS",
+      "pell_dvs_directory": "$PELL_DVS_DIRECTORY",
+      "pell_delegation_manager": "$PELL_DELEGATION_MNAGER",
+      "pell_registry_router": "$REGISTRY_ROUTER_ADDRESS",
+      "dvs_configs": {
+        "$CHAIN_ID": {
+          "chain_id": $CHAIN_ID,
+          "rpc_url": "$SERVICE_CHAIN_RPC_URL",
+          "operator_info_provider": "$DVS_OPERATOR_INFO_PROVIDER",
+          "operator_key_manager": "$DVS_OPERATOR_KEY_MANAGER",
+          "central_scheduler": "$DVS_CENTRAL_SCHEDULER",
+          "operator_index_manager": "$DVS_OPERATOR_INDEX_MANAGER"
+        }
+      }
     }
 }
 EOF
@@ -82,8 +82,6 @@ function setup_admin_key {
   export ADMIN_ADDRESS=$(pelldvs keys show admin --home $PELLDVS_HOME | awk '/Key content:/{getline; print}' | head -n 1 | jq -r .address)
 }
 
-# TODO(jimmy): remove --from flag, it is not needed for this command
-# TODO(jimmy): remove --chain-id flag, it's can be get from DVSRPCClient
 function register_chain_to_pell() {
     REGISTRY_ROUTER_ADDRESS=$(ssh emulator "cat /root/RegistryRouterAddress.json" | jq -r .address)
     DVS_CENTRAL_SCHEDULER=$(ssh hardhat "cat $HARDHAT_DVS_PATH/CentralScheduler-Proxy.json" | jq -r .address)
@@ -92,7 +90,6 @@ function register_chain_to_pell() {
         --from admin \
         --rpc-url $ETH_RPC_URL \
         --registry-router "$REGISTRY_ROUTER_ADDRESS" \
-        --chain-id 1337 \
         --central-scheduler "$DVS_CENTRAL_SCHEDULER" \
         --dvs-rpc-url $ETH_RPC_URL \
         --dvs-from admin \
@@ -139,6 +136,8 @@ EOF
   pelldvs client dvs create-group \
     --home $PELLDVS_HOME \
     --from admin \
+    --rpc-url $ETH_RPC_URL \
+    --registry-router $REGISTRY_ROUTER_ADDRESS \
     --config ./group-0-config.json
 }
 

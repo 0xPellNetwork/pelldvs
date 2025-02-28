@@ -27,38 +27,47 @@ func init() {
 var syncGroupCmd = &cobra.Command{
 	Use:   "sync-group",
 	Short: "sync-group",
-	Long:  `sync-group`,
+	Long: `
+pelldvs client dvs sync-group \
+	--from <key-name> \
+	--rpc-url <rpc-url> \
+	--registry-router <registry-router> \
+	--chain-id <chain-id, defaults to 1337> \
+	<group-numbers, defaults to 0>
+`,
 	Example: `
-
-pelldvs client dvs sync-group --from pell-localnet-deployer
-pelldvs client dvs sync-group --from pell-localnet-deployer
-
+pelldvs client dvs sync-group \
+	--from pell-localnet-deployer
+	--rpc-url http://localhost:8545 \
+	--registry-router 0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f \
+	--chain-id 666 \
+	0
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if chainflags.ChainIDFlag.Value == 0 {
-			chainflags.ChainIDFlag.Value = 1337
-		}
-
-		if chainflags.GroupNumbers.Value == "" {
-			chainflags.GroupNumbers.Value = "0"
-		}
-
-		return handleSyncGroup(cmd, chainflags.FromKeyNameFlag.Value, chainflags.ChainIDFlag.Value, chainflags.GroupNumbers.Value)
+		return handleSyncGroup(cmd)
 	},
 }
 
-func handleSyncGroup(cmd *cobra.Command, keyName string, chainID int, groupNumbersStr string) error {
-	groupNumbers := chainutils.ConvStrsToUint8List(groupNumbersStr)
-	if len(groupNumbers) == 0 {
-		return fmt.Errorf("invalid group numbers %s", groupNumbersStr)
+func handleSyncGroup(cmd *cobra.Command) error {
+	groupNumbersStr := chainflags.GroupNumbers.Value
+	if groupNumbersStr == "" {
+		groupNumbersStr = "0"
+	}
+	if chainflags.ChainIDFlag.Value == 0 {
+		chainflags.ChainIDFlag.Value = 1337
 	}
 
-	kpath := keys.GetKeysPath(pellcfg.CmtConfig, keyName)
+	groupNumbers := chainutils.ConvStrsToUint8List(groupNumbersStr)
+	if len(groupNumbers) == 0 {
+		return fmt.Errorf("invalid group numbers `%s`", groupNumbersStr)
+	}
+
+	kpath := keys.GetKeysPath(pellcfg.CmtConfig, chainflags.FromKeyNameFlag.Value)
 	if !kpath.IsECDSAExist() {
 		return fmt.Errorf("ECDSA key does not exist %s", kpath.ECDSA)
 	}
 
-	res, err := execSyncGroup(cmd, kpath.ECDSA, chainID, groupNumbers)
+	res, err := execSyncGroup(cmd, kpath.ECDSA, chainflags.ChainIDFlag.Value, groupNumbers)
 	if err != nil {
 		return fmt.Errorf("failed: %v", err)
 	}
@@ -68,12 +77,7 @@ func handleSyncGroup(cmd *cobra.Command, keyName string, chainID int, groupNumbe
 }
 
 func execSyncGroup(cmd *cobra.Command, privKeyPath string, chainID int, groupNumbers []byte) (*gethtypes.Receipt, error) {
-	cmdName := "handleSyncGroup"
-
-	logger.Info(cmdName,
-		"privKeyPath", privKeyPath,
-	)
-
+	cmdName := utils.GetPrettyCommandName(cmd)
 	ctx := context.Background()
 	senderAddress, err := ecdsa.GetAddressFromKeyStoreFile(privKeyPath)
 	if err != nil {
@@ -82,12 +86,31 @@ func execSyncGroup(cmd *cobra.Command, privKeyPath string, chainID int, groupNum
 	logger.Info(cmdName,
 		"sender", senderAddress,
 	)
-
-	chainDVS, _, err := utils.NewDVSFromFromFile(cmd, pellcfg.CmtConfig.Pell.InteractorConfigPath, logger)
+	cfg, err := utils.LoadChainConfig(cmd, pellcfg.CmtConfig.Pell.InteractorConfigPath, logger)
 	if err != nil {
-		logger.Error("failed to create operator", "err", err, "file", pellcfg.CmtConfig.Pell.InteractorConfigPath)
+		logger.Error("failed to load chain config", "err", err, "file", pellcfg.CmtConfig.Pell.InteractorConfigPath)
 		return nil, err
 	}
+	logger.Info("chain config details", "chaincfg", fmt.Sprintf("%+v", cfg))
+
+	var chainConfigChecker = utils.NewChainConfigChecker(cfg)
+	if !chainConfigChecker.HasRPCURL() {
+		return nil, fmt.Errorf("rpc url is required")
+	}
+	if !chainConfigChecker.IsValidPellRegistryRouter() {
+		return nil, fmt.Errorf("pell registry router is required")
+	}
+
+	chainDVS, err := utils.NewDVSFromCfg(cfg, logger)
+	if err != nil {
+		logger.Error("failed to create chainDVS",
+			"err", err,
+			"file", pellcfg.CmtConfig.Pell.InteractorConfigPath,
+			"cfg", fmt.Sprintf("%+v", cfg),
+		)
+		return nil, err
+	}
+
 	receipt, err := chainDVS.SyncGroup(ctx, uint64(chainID), groupNumbers)
 
 	logger.Info(cmdName,

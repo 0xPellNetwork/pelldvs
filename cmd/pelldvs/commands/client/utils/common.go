@@ -2,28 +2,27 @@ package utils
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/spf13/cobra"
 
 	chaincfg "github.com/0xPellNetwork/pelldvs-interactor/config"
 	"github.com/0xPellNetwork/pelldvs-libs/log"
+	"github.com/0xPellNetwork/pelldvs-libs/os"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/chains/chainflags"
 	pellcfg "github.com/0xPellNetwork/pelldvs/config"
 )
 
 func LoadChainConfig(cmd *cobra.Command, filePath string, logger log.Logger) (*chaincfg.Config, error) {
+	if !os.FileExists(filePath) {
+		logger.Info("Chain config file not found, use default chain config")
+		cfg := chaincfg.DefaultConfig()
+		UpdateChainConfigFromFlags(cmd, cfg, logger)
+		return cfg, nil
+	}
 	cfg, err := chaincfg.LoadConfig(filePath)
 	if err != nil {
-		logger.Info("Failed to load chain config from file, use default chain config", "error", err)
-		cfg = &chaincfg.Config{
-			RPCURL: "http://localhost:8545",
-			ContractConfig: chaincfg.ContractConfig{
-				DVSConfigs:            make(map[uint64]*chaincfg.DVSConfig),
-				IndexerBatchSize:      100,
-				IndexerListenInterval: 5 * time.Second,
-			},
-		}
+		logger.Error("Failed to load chain config from file, use default chain config", "error", err)
+		return nil, err
 	}
 
 	UpdateChainConfigFromFlags(cmd, cfg, logger)
@@ -32,6 +31,8 @@ func LoadChainConfig(cmd *cobra.Command, filePath string, logger log.Logger) (*c
 }
 
 func UpdateChainConfigFromFlags(cmd *cobra.Command, cfg *chaincfg.Config, logger log.Logger) {
+	logger.Debug("chaincfg before overwrite", "cfg", fmt.Sprintf("%+v", cfg))
+
 	if cmd.Flags().Lookup(chainflags.EthRPCURLFlag.Name).Changed {
 		cfg.RPCURL = chainflags.EthRPCURLFlag.GetValue()
 	}
@@ -54,4 +55,11 @@ func UpdateChainConfigFromFlags(cmd *cobra.Command, cfg *chaincfg.Config, logger
 	cfg.ECDSAPrivateKeyFilePath = fmt.Sprintf("%s/keys/%s.ecdsa.key.json", pellcfg.CmtConfig.RootDir, keyName)
 
 	logger.Debug("chaincfg after overwrite", "cfg", fmt.Sprintf("%+v", cfg))
+}
+
+func GetPrettyCommandName(cmd *cobra.Command) string {
+	if cmd.HasParent() {
+		return fmt.Sprintf("%s/%s", cmd.Parent().Use, cmd.Use)
+	}
+	return cmd.Use
 }

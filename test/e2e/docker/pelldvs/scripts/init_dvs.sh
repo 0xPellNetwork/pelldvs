@@ -33,7 +33,7 @@ function update_pelldvs_config {
     VALUE="$2"
     sed -i "s|${KEY} = \".*\"|${KEY} = \"${VALUE}\"|" ~/.pelldvs/config/config.toml
   }
-	update-config interfactor_config_path "$PELLDVS_HOME/config/interactor_config.json"
+	update-config interactor_config_path "$PELLDVS_HOME/config/interactor_config.json"
 
   DVS_OPERATOR_KEY_MANAGER=$(ssh hardhat "cat $HARDHAT_DVS_PATH/OperatorKeyManager-Proxy.json" | jq -r .address)
   DVS_CENTRAL_SCHEDULER=$(ssh hardhat "cat $HARDHAT_DVS_PATH/CentralScheduler-Proxy.json" | jq -r .address)

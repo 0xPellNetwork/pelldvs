@@ -26,7 +26,6 @@ func init() {
 		createGroupCmd,
 		createRegistryRouterCmd,
 		pauseRegistryRouterCmd,
-		registerChainToPellCmd,
 		setEjectionCooldownCmd,
 		setEjectorCmd,
 		setMinimumStakeForGroupCmd,

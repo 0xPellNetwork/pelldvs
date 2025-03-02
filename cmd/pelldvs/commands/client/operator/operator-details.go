@@ -9,7 +9,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/0xPellNetwork/pelldvs-interactor/types"
-	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/chains/chainflags"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/client/utils"
 	pellcfg "github.com/0xPellNetwork/pelldvs/config"
 )
@@ -35,14 +34,12 @@ pelldvs query operator operator-details \
 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return handleQueryOperatorDetails(cmd, chainflags.FromKeyNameFlag.Value, args[0])
+		return handleQueryOperatorDetails(cmd, args[0])
 	},
 }
 
-func handleQueryOperatorDetails(cmd *cobra.Command, keyName string,
-	operatorAddr string,
+func handleQueryOperatorDetails(cmd *cobra.Command, operatorAddr string,
 ) error {
-
 	if !gethcommon.IsHexAddress(operatorAddr) {
 		return fmt.Errorf("invalid address %s", operatorAddr)
 	}

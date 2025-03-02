@@ -83,17 +83,21 @@ function setup_admin_key {
 }
 
 function register_chain_to_pell() {
-    REGISTRY_ROUTER_ADDRESS=$(ssh emulator "cat /root/RegistryRouterAddress.json" | jq -r .address)
-    DVS_CENTRAL_SCHEDULER=$(ssh hardhat "cat $HARDHAT_DVS_PATH/CentralScheduler-Proxy.json" | jq -r .address)
-    pelldvs client dvs register-chain-to-pell \
-        --home $PELLDVS_HOME \
-        --from admin \
-        --rpc-url $ETH_RPC_URL \
-        --registry-router "$REGISTRY_ROUTER_ADDRESS" \
-        --central-scheduler "$DVS_CENTRAL_SCHEDULER" \
-        --dvs-rpc-url $ETH_RPC_URL \
-        --dvs-from admin \
-        --approver-key-name admin
+  set -e
+  set -x
+
+  REGISTRY_ROUTER_ADDRESS=$(ssh emulator "cat /root/RegistryRouterAddress.json" | jq -r .address)
+  DVS_CENTRAL_SCHEDULER=$(ssh hardhat "cat $HARDHAT_DVS_PATH/CentralScheduler-Proxy.json" | jq -r .address)
+  pelldvs client dvs register-chain-to-pell \
+      --home $PELLDVS_HOME \
+      --rpc-url $ETH_RPC_URL \
+      --registry-router "$REGISTRY_ROUTER_ADDRESS" \
+      --central-scheduler "$DVS_CENTRAL_SCHEDULER" \
+      --dvs-rpc-url $ETH_RPC_URL \
+      --dvs-from admin \
+      --approver-key-name admin
+
+  set +x
 }
 
 function show_supported_chain() {

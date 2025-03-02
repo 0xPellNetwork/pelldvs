@@ -3,6 +3,7 @@ package operator
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/spf13/cobra"
@@ -21,7 +22,6 @@ var delegationApproverCmd = &cobra.Command{
    */
 
 pelldvs query operator delegation-approver \
-	--from <key-name> \
 	--rpc-url <rpc-url> \
 	--delegation-manager <delegation-manager> \
 	<operator-address>
@@ -29,7 +29,6 @@ pelldvs query operator delegation-approver \
 `,
 	Example: `
 pelldvs query operator delegation-approver \
-	--from pell-localnet-deployer \
 	--rpc-url http://localhost:8545 \
 	--delegation-manager 0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f \
 	0xa0Ee7A142d267C1f36714E4a8F75612F20a79720
@@ -46,12 +45,14 @@ func handleDelegationApprover(cmd *cobra.Command, operatorAddr string) error {
 		return fmt.Errorf("failed to create group: %v", err)
 	}
 
-	var res = result
-	if result == "0x0000000000000000000000000000000000000000" {
-		res = "0x ---- not found"
+	result = strings.TrimSpace(result)
+
+	var found = true
+	if result == "0x0000000000000000000000000000000000000000" || result == "" {
+		found = false
 	}
 
-	logger.Info("tx successfully", "result", res)
+	logger.Info("tx successfully", "found", found, "result", result)
 
 	return err
 }

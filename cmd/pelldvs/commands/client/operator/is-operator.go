@@ -47,7 +47,7 @@ func handleCheckIsOperator(cmd *cobra.Command, operatorAddr string) error {
 		return fmt.Errorf("failed to execCheckIsOperator: %v", err)
 	}
 
-	logger.Info("tx successfully", "result", result)
+	logger.Info("tx successfully", "is-operator", result)
 
 	return err
 }

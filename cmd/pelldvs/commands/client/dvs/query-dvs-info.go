@@ -11,7 +11,6 @@ import (
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/chains/chainflags"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/client/utils"
 	pellcfg "github.com/0xPellNetwork/pelldvs/config"
-	"github.com/0xPellNetwork/pelldvs/pkg/keys"
 )
 
 func init() {
@@ -46,11 +45,6 @@ pelldvs client dvs query-dvs-info \
 }
 
 func handleQueryDVSInfo(cmd *cobra.Command) error {
-	kpath := keys.GetKeysPath(pellcfg.CmtConfig, chainflags.FromKeyNameFlag.Value)
-	if !kpath.IsECDSAExist() {
-		return fmt.Errorf("ECDSA key does not exist %s", kpath.ECDSA)
-	}
-
 	dvsInfo, err := execQueryDVSInfo(cmd, chainflags.ChainIDFlag.Value)
 	if err != nil {
 		return fmt.Errorf("failed: %v", err)

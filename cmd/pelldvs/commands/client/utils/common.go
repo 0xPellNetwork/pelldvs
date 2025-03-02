@@ -51,8 +51,10 @@ func UpdateChainConfigFromFlags(cmd *cobra.Command, cfg *chaincfg.Config, logger
 		cfg.ContractConfig.PellDVSDirectory = chainflags.PellDVSDirectoryAddress.GetValue()
 	}
 
-	keyName := cmd.Flags().Lookup(chainflags.FromKeyNameFlag.Name).Value
-	cfg.ECDSAPrivateKeyFilePath = fmt.Sprintf("%s/keys/%s.ecdsa.key.json", pellcfg.CmtConfig.RootDir, keyName)
+	keyName := cmd.Flags().Lookup(chainflags.FromKeyNameFlag.Name).Value.String()
+	if keyName != "" {
+		cfg.ECDSAPrivateKeyFilePath = fmt.Sprintf("%s/keys/%s.ecdsa.key.json", pellcfg.CmtConfig.RootDir, keyName)
+	}
 
 	logger.Debug("chaincfg after overwrite", "cfg", fmt.Sprintf("%+v", cfg))
 }

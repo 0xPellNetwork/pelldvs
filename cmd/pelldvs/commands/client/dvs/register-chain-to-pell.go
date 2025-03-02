@@ -58,7 +58,6 @@ var registerChainToPellCmd = &cobra.Command{
 	Short: "register-chain-to-pell",
 	Long: `
 pelldvs client dvs register-chain-to-pell \
-	--from <key-name> \
 	--rpc-url <rpc-url> \
 	--registry-router <registry-router-address> \
 	--central-scheduler <central-scheduler> \
@@ -68,7 +67,6 @@ pelldvs client dvs register-chain-to-pell \
 `,
 	Example: `
 pelldvs client dvs register-chain-to-pell \
-	--from pell-localnet-deployer \
 	--rpc-url http://localhost:8646 \
 	--registry-router "0xE7402c51ae0bd667ad57a99991af6C2b686cd4f1" \
 	--central-scheduler "0xdbC43Ba45381e02825b14322cDdd15eC4B3164E6" \
@@ -83,11 +81,6 @@ pelldvs client dvs register-chain-to-pell \
 }
 
 func handleRegisterChainToPell(cmd *cobra.Command) error {
-	kpath := keys.GetKeysPath(pellcfg.CmtConfig, chainflags.FromKeyNameFlag.Value)
-	if !kpath.IsECDSAExist() {
-		return fmt.Errorf("ECDSA key does not exist %s", kpath.ECDSA)
-	}
-
 	approverKeyPath := keys.GetKeysPath(pellcfg.CmtConfig, registerChainToPellCmdFlagApproverKeyName.Value)
 	if !approverKeyPath.IsECDSAExist() {
 		return fmt.Errorf("ECDSA key does not exist %s", approverKeyPath.ECDSA)
@@ -116,10 +109,7 @@ func handleRegisterChainToPell(cmd *cobra.Command) error {
 			registerChainToPellCmdFlagDVSRPCURL.Value, err)
 	}
 
-	receipt, err := execRegisterChainToPell(cmd, kpath.ECDSA,
-		dvsChainID.Uint64(),
-		dvsFromKeyPath.ECDSA, approverPkPair,
-	)
+	receipt, err := execRegisterChainToPell(cmd, dvsChainID.Uint64(), dvsFromKeyPath.ECDSA, approverPkPair)
 
 	if err != nil {
 		return fmt.Errorf("failed: %v", err)
@@ -130,26 +120,16 @@ func handleRegisterChainToPell(cmd *cobra.Command) error {
 }
 
 func execRegisterChainToPell(cmd *cobra.Command,
-	privKeyPath string,
 	chainID uint64,
 	dvsFromKeyPath string,
 	appriverPk *ecdsa2.PrivateKey,
 ) (*gethtypes.Receipt, error) {
 	cmdName := utils.GetPrettyCommandName(cmd)
 	logger.Info(cmdName,
-		"privKeyPath", privKeyPath,
 		"chainID", chainID,
 	)
 
 	ctx := context.Background()
-	senderAddress, err := ecdsa.GetAddressFromKeyStoreFile(privKeyPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get senderAddress from key store file: %v", err)
-	}
-	logger.Info(cmdName,
-		"sender", senderAddress,
-	)
-
 	cfg, err := utils.LoadChainConfig(cmd, pellcfg.CmtConfig.Pell.InteractorConfigPath, logger)
 	if err != nil {
 		logger.Error("failed to load chain config", "err", err, "file", pellcfg.CmtConfig.Pell.InteractorConfigPath)
@@ -199,7 +179,6 @@ func execRegisterChainToPell(cmd *cobra.Command,
 
 	logger.Info(cmdName,
 		"k", "v",
-		"sender", senderAddress,
 		"receipt", receipt,
 	)
 

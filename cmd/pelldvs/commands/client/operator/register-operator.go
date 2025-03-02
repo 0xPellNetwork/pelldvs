@@ -72,7 +72,6 @@ pelldvs client operator register-operator \
 }
 
 func handleRegisterOperator(cmd *cobra.Command, metadataURI string, stakerOptoutWindowSeconds uint32, approverAddress string) error {
-
 	kpath := keys.GetKeysPath(pellcfg.CmtConfig, chainflags.FromKeyNameFlag.Value)
 	if !kpath.IsECDSAExist() {
 		return fmt.Errorf("ECDSA key does not exist %s", kpath.ECDSA)

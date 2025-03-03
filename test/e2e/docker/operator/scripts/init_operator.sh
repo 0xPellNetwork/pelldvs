@@ -38,15 +38,11 @@ function init_pelldvs_config {
 
   update-config aggregator_rpc_url "$AGGREGATOR_RPC_URL"
 
-  ## FIXME: operator_bls_private_key_store_path should be in the config template.
   ## FIXME: don't use absolute path for key
   update-config operator_bls_private_key_store_path "$PELLDVS_HOME/keys/$OPERATOR_KEY_NAME.bls.key.json"
-
-  ## FIXME: operator_ecdsa_private_key_store_path should be in the config template.
-  ## FIXME: don't use absolute path for key
   update-config operator_ecdsa_private_key_store_path "$PELLDVS_HOME/keys/$OPERATOR_KEY_NAME.ecdsa.key.json"
 
-  update-config interfactor_config_path "$PELLDVS_HOME/config/interactor_config.json"
+  update-config interactor_config_path "$PELLDVS_HOME/config/interactor_config.json"
 
   DVS_OPERATOR_KEY_MANAGER=$(ssh hardhat "cat $HARDHAT_DVS_PATH/OperatorKeyManager-Proxy.json" | jq -r .address)
   DVS_CENTRAL_SCHEDULER=$(ssh hardhat "cat $HARDHAT_DVS_PATH/CentralScheduler-Proxy.json" | jq -r .address)
@@ -107,18 +103,24 @@ function set_operator_address() {
 
 function register_operator_on_pell {
   OPERATOR_METADATA_URI=https://raw.githubusercontent.com/matthew7251/Metadata/main/Matthew_Metadata.json
+  PELL_DELEGATION_MNAGER=$(ssh hardhat "cat $HARDHAT_CONTRACTS_PATH/PellDelegationManager-Proxy.json" | jq -r .address)
   pelldvs client operator register-operator \
     --home $PELLDVS_HOME \
     --from $OPERATOR_KEY_NAME \
+    --rpc-url $ETH_RPC_URL \
+    --delegation-manager $PELL_DELEGATION_MNAGER \
     --metadata-uri $OPERATOR_METADATA_URI
 
   show_operator_registered "$OPERATOR_ADDRESS"
 }
 
 function register_operator_to_dvs {
+  REGISTRY_ROUTER_ADDRESS=$(ssh emulator "cat /root/RegistryRouterAddress.json" | jq -r .address)
   pelldvs client operator register-operator-to-dvs \
     --home $PELLDVS_HOME \
     --from $OPERATOR_KEY_NAME \
+    --rpc-url $ETH_RPC_URL \
+    --registry-router $REGISTRY_ROUTER_ADDRESS \
     --groups 0 \
     --socket http://operator:26657
   show_dvs_operator_info $OPERATOR_ADDRESS

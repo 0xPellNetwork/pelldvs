@@ -779,7 +779,7 @@ type PellConfig struct {
 	OperatorBLSPrivateKeyStorePath   string `mapstructure:"operator_bls_private_key_store_path"`
 	OperatorECDSAPrivateKeyStorePath string `mapstructure:"operator_ecdsa_private_key_store_path"`
 	AggregatorRPCURL                 string `mapstructure:"aggregator_rpc_url"`
-	InteractorConfigPath             string `mapstructure:"interfactor_config_path"`
+	InteractorConfigPath             string `mapstructure:"interactor_config_path"`
 }
 
 // DefaultPellConfig returns the default Pell configuration

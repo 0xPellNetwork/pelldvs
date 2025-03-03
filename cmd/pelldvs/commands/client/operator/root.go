@@ -9,7 +9,7 @@ import (
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/chains/chainflags"
 )
 
-var logger = log.NewLogger(os.Stdout).With("cmd", "tx/operator")
+var logger = log.NewLogger(os.Stdout).With("cmd", "client/operator")
 
 var OperatorCmd = &cobra.Command{
 	Use:     "operator",
@@ -21,13 +21,12 @@ var OperatorCmd = &cobra.Command{
 }
 
 func init() {
-
-	// make sure the the FROM flag is valid for the following commands
 	_ = chainflags.RequireFromFlagPersistentForCmds(
-		updateOperatorMetadataURICmd,
-		modifyOperatorDetailsCmd,
-		registerOperatorToDVSCmd,
 		deRegisterOperatorCmd,
+		modifyOperatorDetailsCmd,
+		registerOperatorCmd,
+		registerOperatorToDVSCmd,
+		updateOperatorMetadataURICmd,
 		updateSocketCmd,
 	)
 

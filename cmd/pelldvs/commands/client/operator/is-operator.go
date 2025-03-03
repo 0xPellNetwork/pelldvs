@@ -8,11 +8,8 @@ import (
 	gethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/spf13/cobra"
 
-	"github.com/0xPellNetwork/pelldvs-libs/crypto/ecdsa"
-	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/chains/chainflags"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/client/utils"
 	pellcfg "github.com/0xPellNetwork/pelldvs/config"
-	"github.com/0xPellNetwork/pelldvs/pkg/keys"
 )
 
 var isOperatorCmd = &cobra.Command{
@@ -23,67 +20,76 @@ var isOperatorCmd = &cobra.Command{
   /**
    * @notice Returns true is an operator has previously registered for delegation.
    */
+
+pelldvs client operator is-operator \
+	--rpc-url <rpc-url> \
+	--delegation-manager <delegation-manager> \
+	<operator-address>
+
 `,
 	Example: `
-pelldvs client operator is-operator --from <key-name> <operator-address>
-
-pelldvs client operator is-operator --from pell-localnet-deployer 0xa0Ee7A142d267C1f36714E4a8F75612F20a79720
-pelldvs client operator is-operator --from pell-localnet-deployer 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
-
+pelldvs client operator is-operator \
+	--rpc-url http://localhost:8545 \
+	--delegation-manager 0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f \
+	0xa0Ee7A142d267C1f36714E4a8F75612F20a79720
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return handleCheckIsOperator(cmd, chainflags.FromKeyNameFlag.Value, args[0])
+		return handleCheckIsOperator(cmd, args[0])
 	},
 }
 
-func handleCheckIsOperator(cmd *cobra.Command, keyName string,
-	operatorAddr string,
-) error {
+func handleCheckIsOperator(cmd *cobra.Command, operatorAddr string) error {
 	if !gethcommon.IsHexAddress(operatorAddr) {
 		return fmt.Errorf("invalid address %s", operatorAddr)
 	}
-	var err error
-
-	kpath := keys.GetKeysPath(pellcfg.CmtConfig, keyName)
-	if !kpath.IsECDSAExist() {
-		return fmt.Errorf("ECDSA key does not exist %s", kpath.ECDSA)
-	}
-
-	_, err = ecdsa.ReadKey(kpath.ECDSA, "")
-	if err != nil {
-		return fmt.Errorf("failed to read ecdsa key: %v", err)
-	}
-
-	result, err := execCheckIsOperator(cmd, kpath.ECDSA, operatorAddr)
+	result, err := execCheckIsOperator(cmd, operatorAddr)
 	if err != nil {
 		return fmt.Errorf("failed to execCheckIsOperator: %v", err)
 	}
 
-	logger.Info("tx successfully", "result", result)
+	logger.Info("tx successfully", "is-operator", result)
 
 	return err
 }
 
-func execCheckIsOperator(cmd *cobra.Command, privKeyPath string, operatorAddress string) (bool, error) {
+func execCheckIsOperator(cmd *cobra.Command, operatorAddr string) (bool, error) {
 	logger.Info(
-		"handleCheckIsOperator",
-		"ethRPCURL", chainflags.EthRPCURLFlag.Value,
-		"privKeyPath", privKeyPath,
-		"operatorAddress", operatorAddress,
+		utils.GetPrettyCommandName(cmd),
+		"operatorAddr", operatorAddr,
 	)
 
-	chainOp, _, err := utils.NewOperatorFromFile(cmd, pellcfg.CmtConfig.Pell.InteractorConfigPath, logger)
+	cfg, err := utils.LoadChainConfig(cmd, pellcfg.CmtConfig.Pell.InteractorConfigPath, logger)
 	if err != nil {
-		logger.Error("failed to create operator", "err", err)
+		logger.Error("failed to load chain config", "err", err, "file", pellcfg.CmtConfig.Pell.InteractorConfigPath)
+		return false, err
+	}
+
+	logger.Info("chain config details", "chaincfg", fmt.Sprintf("%+v", cfg))
+
+	var chainConfigChecker = utils.NewChainConfigChecker(cfg)
+	if !chainConfigChecker.HasRPCURL() {
+		return false, fmt.Errorf("rpc url is required")
+	}
+	if !chainConfigChecker.IsValidPellDelegationManager() {
+		return false, fmt.Errorf("pell delegation manager is required")
+	}
+
+	chainOp, err := utils.NewOperatorFromCfg(cfg, logger)
+	if err != nil {
+		logger.Error("failed to create chain operator",
+			"err", err,
+			"file", pellcfg.CmtConfig.Pell.InteractorConfigPath,
+			"cfg", fmt.Sprintf("%+v", cfg),
+		)
 		return false, err
 	}
 
 	ctx := context.Background()
-	result, err := chainOp.IsOperator(&bind.CallOpts{Context: ctx}, operatorAddress)
+	result, err := chainOp.IsOperator(&bind.CallOpts{Context: ctx}, operatorAddr)
 
 	logger.Info(
-		"handleCheckIsOperator",
-		"address", operatorAddress,
+		utils.GetPrettyCommandName(cmd),
+		"address", operatorAddr,
 		"result", result,
 	)
 

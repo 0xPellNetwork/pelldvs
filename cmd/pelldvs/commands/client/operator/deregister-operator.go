@@ -21,26 +21,32 @@ var deRegisterOperatorCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	Long: `Deregisters the caller from one or more groups
 * @param groupNumbers is an ordered byte array containing the group numbers being deregistered from
+
+pelldvs client operator deregister-operator \ 
+	--from <key-name> \
+	--rpc-url <rpc-url> \
+	--registry-router <registry-router> \
+	<group-numbers>
 `,
 	Example: `
-pelldvs client operator deregister-operator --from <keyName>  <groupNumbers>
-pelldvs client operator deregister-operator --from pell-localnet-deployer 1,2,3
 
+pelldvs client operator deregister-operator \
+	--from pell-localnet-deployer
+	--rpc-url http://localhost:8545 \
+	--registry-router 0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f \
+	1,2,3
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return handleDeRegisterOperator(cmd, chainflags.FromKeyNameFlag.Value, args[0])
+		return handleDeRegisterOperator(cmd, args[0])
 	},
 }
 
-func handleDeRegisterOperator(cmd *cobra.Command, keyName string,
-	groupNumbersStr string,
-) error {
-
+func handleDeRegisterOperator(cmd *cobra.Command, groupNumbersStr string) error {
 	groupNumbers := chainutils.ConvStrsToUint8List(groupNumbersStr)
 	if len(groupNumbers) == 0 {
 		return fmt.Errorf("invalid group numbers %s", groupNumbersStr)
 	}
-	kpath := keys.GetKeysPath(pellcfg.CmtConfig, keyName)
+	kpath := keys.GetKeysPath(pellcfg.CmtConfig, chainflags.FromKeyNameFlag.Value)
 	if !kpath.IsECDSAExist() {
 		return fmt.Errorf("ECDSA key does not exist %s", kpath.ECDSA)
 	}
@@ -57,8 +63,7 @@ func handleDeRegisterOperator(cmd *cobra.Command, keyName string,
 
 func execDeRegisterOperator(cmd *cobra.Command, privKeyPath string, groupNumbers []byte) (*gethtypes.Receipt, error) {
 	logger.Info(
-		"handleDeRegisterOperator",
-		"ethRPCURL", chainflags.EthRPCURLFlag.Value,
+		utils.GetPrettyCommandName(cmd),
 		"privKeyPath", privKeyPath,
 		"operator", groupNumbers,
 	)
@@ -69,16 +74,35 @@ func execDeRegisterOperator(cmd *cobra.Command, privKeyPath string, groupNumbers
 		return nil, fmt.Errorf("failed to get address from key store file: %v", err)
 	}
 
-	chainOp, _, err := utils.NewOperatorFromFile(cmd, pellcfg.CmtConfig.Pell.InteractorConfigPath, logger)
+	cfg, err := utils.LoadChainConfig(cmd, pellcfg.CmtConfig.Pell.InteractorConfigPath, logger)
 	if err != nil {
-		logger.Error("failed to create operator", "err", err)
+		logger.Error("failed to load chain config", "err", err, "file", pellcfg.CmtConfig.Pell.InteractorConfigPath)
+		return nil, err
+	}
+	logger.Info("chain config details", "chaincfg", fmt.Sprintf("%+v", cfg))
+
+	var chainConfigChecker = utils.NewChainConfigChecker(cfg)
+	if !chainConfigChecker.HasRPCURL() {
+		return nil, fmt.Errorf("rpc url is required")
+	}
+	if !chainConfigChecker.IsValidPellRegistryRouter() {
+		return nil, fmt.Errorf("pell registry router is required")
+	}
+
+	chainOp, err := utils.NewOperatorFromCfg(cfg, logger)
+	if err != nil {
+		logger.Error("failed to create chain operator",
+			"err", err,
+			"file", pellcfg.CmtConfig.Pell.InteractorConfigPath,
+			"cfg", fmt.Sprintf("%+v", cfg),
+		)
 		return nil, err
 	}
 
 	receipt, err := chainOp.DeregisterOperator(ctx, groupNumbers)
 
 	logger.Info(
-		"handleDeRegisterOperator",
+		utils.GetPrettyCommandName(cmd),
 		"address", address,
 		"receipt", receipt,
 	)

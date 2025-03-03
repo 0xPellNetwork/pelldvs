@@ -32,10 +32,20 @@ var updateDVSMetadataURICmd = &cobra.Command{
         }
    * @dev only callable by the owner
    */
+
+pelldvs client dvs update-dvs-metadata-uri \
+	--from <key-name> \
+	--rpc-url <rpc-url> \
+	--registry-router <registry-router> \
+	<uri>
+
 `,
 	Example: `
-pelldvs client dvs update-dvs-metadata-uri --from pell-localnet-deployer <uri>
-pelldvs client dvs update-dvs-metadata-uri --from pell-localnet-deployer https://raw.githubusercontent.com/example/repo/file.json
+pelldvs client dvs update-dvs-metadata-uri \
+	--from pell-localnet-deployer \
+	--rpc-url http://localhost:8545 \
+	--registry-router 0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f \
+	https://raw.githubusercontent.com/example/repo/file.json
 
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -61,10 +71,8 @@ func handleUpdateDVSMetadataURI(cmd *cobra.Command, keyName string, uri string) 
 }
 
 func execUpdateDVSMetadataURI(cmd *cobra.Command, privKeyPath string, uri string) (*gethtypes.Receipt, error) {
-
 	logger.Info(
-		"execUpdateDVSMetadataURI",
-		"ethRPCURL", chainflags.EthRPCURLFlag.Value,
+		utils.GetPrettyCommandName(cmd),
 		"privKeyPath", privKeyPath,
 		"uri", uri,
 	)
@@ -75,16 +83,35 @@ func execUpdateDVSMetadataURI(cmd *cobra.Command, privKeyPath string, uri string
 		return nil, fmt.Errorf("failed to get address from key store file: %v", err)
 	}
 
-	chainDVS, _, err := utils.NewDVSFromFromFile(cmd, pellcfg.CmtConfig.Pell.InteractorConfigPath, logger)
+	cfg, err := utils.LoadChainConfig(cmd, pellcfg.CmtConfig.Pell.InteractorConfigPath, logger)
 	if err != nil {
-		logger.Error("failed to create operator", "err", err, "file", pellcfg.CmtConfig.Pell.InteractorConfigPath)
+		logger.Error("failed to load chain config", "err", err, "file", pellcfg.CmtConfig.Pell.InteractorConfigPath)
+		return nil, err
+	}
+	logger.Info("chain config details", "chaincfg", fmt.Sprintf("%+v", cfg))
+
+	var chainConfigChecker = utils.NewChainConfigChecker(cfg)
+	if !chainConfigChecker.HasRPCURL() {
+		return nil, fmt.Errorf("rpc url is required")
+	}
+	if !chainConfigChecker.IsValidPellRegistryRouter() {
+		return nil, fmt.Errorf("pell registry router is required")
+	}
+
+	chainDVS, err := utils.NewDVSFromCfg(cfg, logger)
+	if err != nil {
+		logger.Error("failed to create chainDVS",
+			"err", err,
+			"file", pellcfg.CmtConfig.Pell.InteractorConfigPath,
+			"cfg", fmt.Sprintf("%+v", cfg),
+		)
 		return nil, err
 	}
 
 	receipt, err := chainDVS.UpdateDVSMetadataURI(ctx, uri)
 
 	logger.Info(
-		"execUpdateDVSMetadataURI",
+		utils.GetPrettyCommandName(cmd),
 		"sender", address,
 		"receipt", receipt,
 	)

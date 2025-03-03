@@ -27,12 +27,22 @@ var setOperatorSetCmd = &cobra.Command{
    * @param operatorSetParams the new config
    * @dev only callable by the owner
    */
-`,
-	Example: `
-pelldvs client dvs set-operator-set-params --from <key-name> <param-file-path.json>
-pelldvs client dvs set-operator-set-param --from pell-localnet-deployer /data/pells/dvsreqs2/set-operator-set-param-1.json
+
+
+pelldvs client dvs set-operator-set-params \
+	--from <key-name> \
+	--rpc-url <rpc-url> \
+	--registry-router <registry-router> \
+	<param-file-path.json>
 
 `,
+	Example: `
+pelldvs client dvs set-operator-set-param \
+	--from pell-localnet-deployer \
+	--rpc-url https://localhost:8545 \
+	--registry-router 0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f \
+	/data/pells/dvsreqs2/set-operator-set-param-1.json
+	`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		paramFilePath := args[0]
 		return handleSetOperatorSet(cmd, paramFilePath)
@@ -67,8 +77,7 @@ func handleSetOperatorSet(cmd *cobra.Command, paramFilePath string) error {
 }
 
 func execSetOperatorSet(cmd *cobra.Command, params *chaintypes.SetOperatorSetParamRequest, privKeyPath string) (*gethtypes.Receipt, error) {
-	cmdName := "setOperatorSetParam"
-
+	cmdName := utils.GetPrettyCommandName(cmd)
 	logger.Info(fmt.Sprintf("%s start", cmdName),
 		"privKeyPath", privKeyPath,
 		"params", params,
@@ -83,9 +92,28 @@ func execSetOperatorSet(cmd *cobra.Command, params *chaintypes.SetOperatorSetPar
 		"sender", senderAddress,
 	)
 
-	chainDVS, _, err := utils.NewDVSFromFromFile(cmd, pellcfg.CmtConfig.Pell.InteractorConfigPath, logger)
+	cfg, err := utils.LoadChainConfig(cmd, pellcfg.CmtConfig.Pell.InteractorConfigPath, logger)
 	if err != nil {
-		logger.Error("failed to create operator", "err", err, "file", pellcfg.CmtConfig.Pell.InteractorConfigPath)
+		logger.Error("failed to load chain config", "err", err, "file", pellcfg.CmtConfig.Pell.InteractorConfigPath)
+		return nil, err
+	}
+	logger.Info("chain config details", "chaincfg", fmt.Sprintf("%+v", cfg))
+
+	var chainConfigChecker = utils.NewChainConfigChecker(cfg)
+	if !chainConfigChecker.HasRPCURL() {
+		return nil, fmt.Errorf("rpc url is required")
+	}
+	if !chainConfigChecker.IsValidPellRegistryRouter() {
+		return nil, fmt.Errorf("pell registry router is required")
+	}
+
+	chainDVS, err := utils.NewDVSFromCfg(cfg, logger)
+	if err != nil {
+		logger.Error("failed to create chainDVS",
+			"err", err,
+			"file", pellcfg.CmtConfig.Pell.InteractorConfigPath,
+			"cfg", fmt.Sprintf("%+v", cfg),
+		)
 		return nil, err
 	}
 

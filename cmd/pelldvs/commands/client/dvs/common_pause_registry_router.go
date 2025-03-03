@@ -30,8 +30,7 @@ func handlePauseOrUnRegistryRouter(cmd *cobra.Command, ok bool) error {
 }
 
 func execPauseOrRegistryRouter(cmd *cobra.Command, privKeyPath string, ok bool) (*gethtypes.Receipt, error) {
-	cmdName := "handlePauseRegistryRouter"
-
+	cmdName := utils.GetPrettyCommandName(cmd)
 	logger.Info(cmdName,
 		"privKeyPath", privKeyPath,
 	)
@@ -45,11 +44,27 @@ func execPauseOrRegistryRouter(cmd *cobra.Command, privKeyPath string, ok bool) 
 		"sender", senderAddress,
 	)
 
-	chainDVS, _, err := utils.NewDVSFromFromFile(cmd, pellcfg.CmtConfig.Pell.InteractorConfigPath, logger)
+	cfg, err := utils.LoadChainConfig(cmd, pellcfg.CmtConfig.Pell.InteractorConfigPath, logger)
+	if err != nil {
+		logger.Error("failed to load chain config", "err", err, "file", pellcfg.CmtConfig.Pell.InteractorConfigPath)
+		return nil, err
+	}
+	logger.Info("chain config details", "chaincfg", fmt.Sprintf("%+v", cfg))
+
+	var chainConfigChecker = utils.NewChainConfigChecker(cfg)
+	if !chainConfigChecker.HasRPCURL() {
+		return nil, fmt.Errorf("rpc url is required")
+	}
+	if !chainConfigChecker.IsValidPellRegistryRouter() {
+		return nil, fmt.Errorf("pell registry router is required")
+	}
+
+	chainDVS, err := utils.NewDVSFromCfg(cfg, logger)
 	if err != nil {
 		logger.Error("failed to create operator", "err", err, "file", pellcfg.CmtConfig.Pell.InteractorConfigPath)
 		return nil, err
 	}
+
 	var receipt *gethtypes.Receipt
 	if ok {
 		receipt, err = chainDVS.PauseRegistryRouter(ctx)

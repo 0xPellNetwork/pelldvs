@@ -19,11 +19,20 @@ var updateSocketCmd = &cobra.Command{
 	Short: "update-socket",
 	Args:  cobra.ExactArgs(1),
 	Long: `Updates the socket of the msg.sender given they are a registered operator
-   * @param socket is the new socket of the operator`,
-	Example: `
+   * @param socket is the new socket of the operator
 
-pelldvs client operator update-socket --from <key-name>  <socket-uri>
-pelldvs client operator update-socket --from pell-localnet-deployer '127.0.0.1:9988'
+pelldvs client operator update-socket \
+	--from <key-name>  \
+	--rpc-url <rpc-url> \
+	--registry-router <registry-router> \
+	<socket-uri>
+`,
+	Example: `
+pelldvs client operator update-socket \
+	--from pell-localnet-deployer \
+	--rpc-url http://localhost:8545 \
+	--registry-router 0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f \
+	'127.0.0.1:9988'
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		uri := args[0]
@@ -32,9 +41,7 @@ pelldvs client operator update-socket --from pell-localnet-deployer '127.0.0.1:9
 }
 
 func handleUpdateSocket(cmd *cobra.Command, socket string) error {
-	keyName := chainflags.FromKeyNameFlag.GetValue()
-
-	kpath := keys.GetKeysPath(pellcfg.CmtConfig, keyName)
+	kpath := keys.GetKeysPath(pellcfg.CmtConfig, chainflags.FromKeyNameFlag.Value)
 	if !kpath.IsECDSAExist() {
 		return fmt.Errorf("ECDSA key does not exist %s", kpath.ECDSA)
 	}
@@ -51,8 +58,7 @@ func handleUpdateSocket(cmd *cobra.Command, socket string) error {
 
 func execUpdateSocket(cmd *cobra.Command, privKeyPath string, uri string) (*gethtypes.Receipt, error) {
 	logger.Info(
-		"handleUpdateSocket",
-		"ethRPCURL", chainflags.EthRPCURLFlag.Value,
+		utils.GetPrettyCommandName(cmd),
 		"privKeyPath", privKeyPath,
 		"uri", uri,
 	)
@@ -63,16 +69,35 @@ func execUpdateSocket(cmd *cobra.Command, privKeyPath string, uri string) (*geth
 		return nil, fmt.Errorf("failed to get address from key store file: %v", err)
 	}
 
-	chainOp, _, err := utils.NewOperatorFromFile(cmd, pellcfg.CmtConfig.Pell.InteractorConfigPath, logger)
+	cfg, err := utils.LoadChainConfig(cmd, pellcfg.CmtConfig.Pell.InteractorConfigPath, logger)
 	if err != nil {
-		logger.Error("failed to create operator", "err", err)
+		logger.Error("failed to load chain config", "err", err, "file", pellcfg.CmtConfig.Pell.InteractorConfigPath)
+		return nil, err
+	}
+	logger.Info("chain config details", "chaincfg", fmt.Sprintf("%+v", cfg))
+
+	var chainConfigChecker = utils.NewChainConfigChecker(cfg)
+	if !chainConfigChecker.HasRPCURL() {
+		return nil, fmt.Errorf("rpc url is required")
+	}
+	if !chainConfigChecker.IsValidPellRegistryRouter() {
+		return nil, fmt.Errorf("pell registry router is required")
+	}
+
+	chainOp, err := utils.NewOperatorFromCfg(cfg, logger)
+	if err != nil {
+		logger.Error("failed to create chain operator",
+			"err", err,
+			"file", pellcfg.CmtConfig.Pell.InteractorConfigPath,
+			"cfg", fmt.Sprintf("%+v", cfg),
+		)
 		return nil, err
 	}
 
 	receipt, err := chainOp.UpdateSocket(ctx, uri)
 
 	logger.Info(
-		"handleUpdateSocket",
+		utils.GetPrettyCommandName(cmd),
 		"address", address,
 		"receipt", receipt,
 	)

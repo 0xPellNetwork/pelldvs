@@ -13,6 +13,8 @@ github.com/0xPellNetwork/pelldvs-interactor v0.0.8 h1:N7OjZwQiX6/WfOH6kYYPbf9+ae
 github.com/0xPellNetwork/pelldvs-interactor v0.0.8/go.mod h1:kHbDu0iVhdwF38ZVDB2Fnsg87+gj74wAnaKz+wPwb/w=
 github.com/0xPellNetwork/pelldvs-interactor v0.0.9 h1:Wp6uir7wXJKK+mSy2/LOfAE63aaMSZi/RYd/yFSdImA=
 github.com/0xPellNetwork/pelldvs-interactor v0.0.9/go.mod h1:kHbDu0iVhdwF38ZVDB2Fnsg87+gj74wAnaKz+wPwb/w=
+github.com/0xPellNetwork/pelldvs-interactor v0.0.10 h1:+cCl7fPBTN9wP8KGUfM5a98S1Umh109LXWxbuBC8WJ8=
+github.com/0xPellNetwork/pelldvs-interactor v0.0.10/go.mod h1:kHbDu0iVhdwF38ZVDB2Fnsg87+gj74wAnaKz+wPwb/w=
 github.com/0xPellNetwork/pelldvs-libs v0.2.0 h1:fNyzJKhH5Iux1YVPddLVwR/txPkbkRvE5+VunS7tFeg=
 github.com/0xPellNetwork/pelldvs-libs v0.2.0/go.mod h1:mU9ltThnyjDpKZHnOuJvMqbQU1O99P4cOAecTUKDAIY=
 github.com/AlecAivazis/survey/v2 v2.3.7 h1:6I/u8FvytdGsgonrYsVn2t8t4QiRnh6QSTqkkhIiSjQ=

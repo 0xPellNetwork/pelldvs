@@ -21,14 +21,20 @@ var setEjectionCooldownCmd = &cobra.Command{
 	Long: `Sets the ejection cooldown, which is the time an operator must wait in
    * seconds afer ejection before registering for any group
    * @param _ejectionCooldown the new ejection cooldown in seconds
-   * @dev only callable by the owner
-   */
+
+pelldvs client dvs set-ejection-cooldown\
+	--from <key-name> \
+	--rpc-url <rpc-url> \
+	--registry-router <registry-router> \
+	<seconds>
 `,
 	Args: cobra.ExactArgs(1),
 	Example: `
-
-pelldvs client dvs set-ejection-cooldown  --from <key-name> <seconds>
-pelldvs client dvs set-ejection-cooldown --from pell-localnet-deployer <seconds>
+pelldvs client dvs set-ejection-cooldown \
+	--from pell-localnet-deployer \
+	--rpc-url http://127.0.0.1:8545 \
+	--registry-router 0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f \
+	666
 
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -64,16 +70,36 @@ func execSetEjectionCooldown(cmd *cobra.Command, privKeyPath string, cooldown ui
 		return nil, fmt.Errorf("failed to get address from key store file: %v", err)
 	}
 
-	chainDVS, _, err := utils.NewDVSFromFromFile(cmd, pellcfg.CmtConfig.Pell.InteractorConfigPath, logger)
+	cfg, err := utils.LoadChainConfig(cmd, pellcfg.CmtConfig.Pell.InteractorConfigPath, logger)
 	if err != nil {
-		logger.Error("failed to create operator", "err", err, "file", pellcfg.CmtConfig.Pell.InteractorConfigPath)
+		logger.Error("failed to load chain config", "err", err, "file", pellcfg.CmtConfig.Pell.InteractorConfigPath)
+		return nil, err
+	}
+
+	logger.Info("chain config details", "chaincfg", fmt.Sprintf("%+v", cfg))
+
+	var chainConfigChecker = utils.NewChainConfigChecker(cfg)
+	if !chainConfigChecker.HasRPCURL() {
+		return nil, fmt.Errorf("rpc url is required")
+	}
+	if !chainConfigChecker.IsValidPellRegistryRouter() {
+		return nil, fmt.Errorf("pell registry router is required")
+	}
+
+	chainDVS, err := utils.NewDVSFromCfg(cfg, logger)
+	if err != nil {
+		logger.Error("failed to create chainDVS",
+			"err", err,
+			"file", pellcfg.CmtConfig.Pell.InteractorConfigPath,
+			"cfg", fmt.Sprintf("%+v", cfg),
+		)
 		return nil, err
 	}
 
 	receipt, err := chainDVS.SetEjectionCooldown(ctx, cooldown)
 
 	logger.Info(
-		"execSetEjectionCooldown",
+		utils.GetPrettyCommandName(cmd),
 		"k", "v",
 		"sender", address,
 		"receipt", receipt,

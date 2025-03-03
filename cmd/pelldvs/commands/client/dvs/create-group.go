@@ -37,28 +37,37 @@ var createGroupCmd = &cobra.Command{
    * @param operatorSetParams configures the group's max operator count and churn parameters
    * @param minimumStake sets the minimum stake required for an operator to register or remain
    * registered
+
+pelldvs client dvs create-group \
+	--from <key-name> \
+	--rpc-url <rpc-url> \
+	--registry-router <registry-router> \
+	--config <config-json-path
 `,
 	Example: `
-pelldvs client dvs create-group --from <key-name> --config <config-json-path>
-pelldvs client dvs create-group --from pell-localnet-deployer --config /data/pells/dvsreqs2/create-group-1.json
+pelldvs client dvs create-group \
+	--from pell-localnet-deployer \
+	--rpc-url http://localhost:8545 \
+	--registry-router 0x1234567890123456789012345678901234567890 \
+	--config /data/pells/dvsreqs2/create-group-1.json
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return handleCreateGroup(cmd, chainflags.FromKeyNameFlag.Value, groupConfigFileFlag.Value)
+		return handleCreateGroup(cmd)
 	},
 }
 
-func handleCreateGroup(cmd *cobra.Command, keyName, paramFilePath string) error {
-	kpath := keys.GetKeysPath(pellcfg.CmtConfig, keyName)
+func handleCreateGroup(cmd *cobra.Command) error {
+	kpath := keys.GetKeysPath(pellcfg.CmtConfig, chainflags.FromKeyNameFlag.Value)
 	if !kpath.IsECDSAExist() {
 		return fmt.Errorf("ECDSA key does not exist %s", kpath.ECDSA)
 	}
 
-	if !cmtos.FileExists(paramFilePath) {
-		return fmt.Errorf("param file does not exist %s", paramFilePath)
+	if !cmtos.FileExists(groupConfigFileFlag.Value) {
+		return fmt.Errorf("param file does not exist %s", groupConfigFileFlag.Value)
 	}
 
 	var createGroupParam chaintypes.CreateGroupRequest
-	err := decodeJSONFromFile(paramFilePath, &createGroupParam)
+	err := decodeJSONFromFile(groupConfigFileFlag.Value, &createGroupParam)
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal createGroupParam: %v", err)
 	}
@@ -74,8 +83,7 @@ func handleCreateGroup(cmd *cobra.Command, keyName, paramFilePath string) error 
 }
 
 func execCreateGroup(cmd *cobra.Command, params chaintypes.CreateGroupRequest, privKeyPath string) (*gethtypes.Receipt, error) {
-	cmdName := "createGroupParam"
-
+	cmdName := utils.GetPrettyCommandName(cmd)
 	logger.Info(fmt.Sprintf("%s start", cmdName),
 		"privKeyPath", privKeyPath,
 		"params", params,
@@ -90,7 +98,22 @@ func execCreateGroup(cmd *cobra.Command, params chaintypes.CreateGroupRequest, p
 		"sender", senderAddress,
 	)
 
-	chainDVS, _, err := utils.NewDVSFromFromFile(cmd, pellcfg.CmtConfig.Pell.InteractorConfigPath, logger)
+	cfg, err := utils.LoadChainConfig(cmd, pellcfg.CmtConfig.Pell.InteractorConfigPath, logger)
+	if err != nil {
+		logger.Error("failed to load chain config", "err", err, "file", pellcfg.CmtConfig.Pell.InteractorConfigPath)
+		return nil, err
+	}
+	logger.Info("chain config details", "chaincfg", fmt.Sprintf("%+v", cfg))
+
+	var chainConfigChecker = utils.NewChainConfigChecker(cfg)
+	if !chainConfigChecker.HasRPCURL() {
+		return nil, fmt.Errorf("rpc url is required")
+	}
+	if !chainConfigChecker.IsValidPellRegistryRouter() {
+		return nil, fmt.Errorf("pell registry router is required")
+	}
+
+	chainDVS, err := utils.NewDVSFromCfg(cfg, logger)
 	if err != nil {
 		logger.Error("failed to create operator", "err", err, "file", pellcfg.CmtConfig.Pell.InteractorConfigPath)
 		return nil, err

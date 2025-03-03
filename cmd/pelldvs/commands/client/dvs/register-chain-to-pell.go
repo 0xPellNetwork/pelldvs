@@ -8,6 +8,7 @@ import (
 	gethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/spf13/cobra"
 
+	"github.com/0xPellNetwork/pelldvs-interactor/chainlibs/eth"
 	chaincfg "github.com/0xPellNetwork/pelldvs-interactor/config"
 	"github.com/0xPellNetwork/pelldvs-libs/crypto/ecdsa"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/chains/chainflags"
@@ -15,9 +16,6 @@ import (
 	pellcfg "github.com/0xPellNetwork/pelldvs/config"
 	"github.com/0xPellNetwork/pelldvs/pkg/keys"
 )
-
-// TODO(jimmy): remove --from flag, it is not needed for this command
-// TODO(jimmy): remove --chain-id flag, it's can be get from DVSRPCClient
 
 var (
 	registerChainToPellCmdFlagCentralScheduler = &chainflags.StringFlag{
@@ -39,14 +37,12 @@ var (
 )
 
 func init() {
-	chainflags.ChainIDFlag.AddToCmdFlag(registerChainToPellCmd)
 	registerChainToPellCmdFlagCentralScheduler.AddToCmdFlag(registerChainToPellCmd)
 	registerChainToPellCmdFlagDVSRPCURL.AddToCmdFlag(registerChainToPellCmd)
 	registerChainToPellCmdFlagApproverKeyName.AddToCmdFlag(registerChainToPellCmd)
 	registerChainToPellCmdFlagDVSFrom.AddToCmdFlag(registerChainToPellCmd)
 
 	err := chainflags.MarkFlagsAreRequired(registerChainToPellCmd,
-		chainflags.ChainIDFlag,
 		chainflags.PellRegistryRouterAddress,
 		registerChainToPellCmdFlagCentralScheduler,
 		registerChainToPellCmdFlagApproverKeyName,
@@ -60,24 +56,19 @@ func init() {
 var registerChainToPellCmd = &cobra.Command{
 	Use:   "register-chain-to-pell",
 	Short: "register-chain-to-pell",
-	Long:  `register-chain-to-pell`,
-	Example: `
-
+	Long: `
 pelldvs client dvs register-chain-to-pell \
-	--from <key-name> \
 	--rpc-url <rpc-url> \
 	--registry-router <registry-router-address> \
-	--chain-id <chain-id> \
 	--central-scheduler <central-scheduler> \
 	--dvs-rpc-url <dvs-rpc-url> \
 	--dvs-from <dvs-from> \
 	--approver-key-name <approver-key-name>
-
+`,
+	Example: `
 pelldvs client dvs register-chain-to-pell \
-	--from pell-localnet-deployer \
 	--rpc-url http://localhost:8646 \
 	--registry-router "0xE7402c51ae0bd667ad57a99991af6C2b686cd4f1" \
-	--chain-id 1337 \
 	--central-scheduler "0xdbC43Ba45381e02825b14322cDdd15eC4B3164E6" \
 	--dvs-rpc-url http://localhost:8747 \
 	--dvs-from pell-localnet-deployer \
@@ -85,28 +76,17 @@ pelldvs client dvs register-chain-to-pell \
 
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return handleRegisterChainToPell(
-			cmd,
-			uint64(chainflags.ChainIDFlag.Value),
-			registerChainToPellCmdFlagDVSFrom.Value,
-			registerChainToPellCmdFlagApproverKeyName.Value,
-		)
+		return handleRegisterChainToPell(cmd)
 	},
 }
 
-func handleRegisterChainToPell(cmd *cobra.Command, chainID uint64, DVSFrom, approverKeyName string) error {
-
-	kpath := keys.GetKeysPath(pellcfg.CmtConfig, chainflags.FromKeyNameFlag.Value)
-	if !kpath.IsECDSAExist() {
-		return fmt.Errorf("ECDSA key does not exist %s", kpath.ECDSA)
-	}
-
-	approverKeyPath := keys.GetKeysPath(pellcfg.CmtConfig, approverKeyName)
+func handleRegisterChainToPell(cmd *cobra.Command) error {
+	approverKeyPath := keys.GetKeysPath(pellcfg.CmtConfig, registerChainToPellCmdFlagApproverKeyName.Value)
 	if !approverKeyPath.IsECDSAExist() {
 		return fmt.Errorf("ECDSA key does not exist %s", approverKeyPath.ECDSA)
 	}
 
-	dvsFromKeyPath := keys.GetKeysPath(pellcfg.CmtConfig, DVSFrom)
+	dvsFromKeyPath := keys.GetKeysPath(pellcfg.CmtConfig, registerChainToPellCmdFlagDVSFrom.Value)
 	if !dvsFromKeyPath.IsECDSAExist() {
 		return fmt.Errorf("ECDSA key does not exist %s", dvsFromKeyPath.ECDSA)
 	}
@@ -116,7 +96,21 @@ func handleRegisterChainToPell(cmd *cobra.Command, chainID uint64, DVSFrom, appr
 		return fmt.Errorf("failed to read approverPkPair ecdsa key: %v", err)
 	}
 
-	receipt, err := execRegisterChainToPell(cmd, kpath.ECDSA, chainID, dvsFromKeyPath.ECDSA, approverPkPair)
+	dvsETHClient, err := eth.NewClient(registerChainToPellCmdFlagDVSRPCURL.Value)
+	if err != nil {
+		return fmt.Errorf("failed to create eth client for RPCURL: %s:, err %v",
+			registerChainToPellCmdFlagDVSRPCURL.Value, err,
+		)
+	}
+
+	dvsChainID, err := dvsETHClient.ChainID(cmd.Context())
+	if err != nil {
+		return fmt.Errorf("failed to get chain id from rpc client: url:%s , error: %v",
+			registerChainToPellCmdFlagDVSRPCURL.Value, err)
+	}
+
+	receipt, err := execRegisterChainToPell(cmd, dvsChainID.Uint64(), dvsFromKeyPath.ECDSA, approverPkPair)
+
 	if err != nil {
 		return fmt.Errorf("failed: %v", err)
 	}
@@ -126,29 +120,19 @@ func handleRegisterChainToPell(cmd *cobra.Command, chainID uint64, DVSFrom, appr
 }
 
 func execRegisterChainToPell(cmd *cobra.Command,
-	privKeyPath string,
 	chainID uint64,
 	dvsFromKeyPath string,
 	appriverPk *ecdsa2.PrivateKey,
 ) (*gethtypes.Receipt, error) {
-	cmdName := "handleRegisterChainToPell"
-
+	cmdName := utils.GetPrettyCommandName(cmd)
 	logger.Info(cmdName,
-		"privKeyPath", privKeyPath,
 		"chainID", chainID,
 	)
 
 	ctx := context.Background()
-	senderAddress, err := ecdsa.GetAddressFromKeyStoreFile(privKeyPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get senderAddress from key store file: %v", err)
-	}
-	logger.Info(cmdName,
-		"sender", senderAddress,
-	)
-
 	cfg, err := utils.LoadChainConfig(cmd, pellcfg.CmtConfig.Pell.InteractorConfigPath, logger)
 	if err != nil {
+		logger.Error("failed to load chain config", "err", err, "file", pellcfg.CmtConfig.Pell.InteractorConfigPath)
 		return nil, err
 	}
 
@@ -168,10 +152,26 @@ func execRegisterChainToPell(cmd *cobra.Command,
 
 	cfg.ContractConfig.DVSConfigs[chainID].ECDSAPrivateKeyFilePath = dvsFromKeyPath
 
-	logger.Debug("chaincfg", "cfg", fmt.Sprintf("%+v", cfg))
+	logger.Info("chain config details", "chaincfg", fmt.Sprintf("%+v", cfg))
+
+	var chainConfigChecker = utils.NewChainConfigChecker(cfg)
+	if !chainConfigChecker.HasRPCURL() {
+		return nil, fmt.Errorf("rpc url is required")
+	}
+	if !chainConfigChecker.IsValidPellRegistryRouter() {
+		return nil, fmt.Errorf("pell registry router is required")
+	}
+	if !chainConfigChecker.IsValidDVSCentralScheduler(chainID) {
+		return nil, fmt.Errorf("central scheduler is required")
+	}
 
 	chainDVS, err := utils.NewDVSFromCfg(cfg, logger)
 	if err != nil {
+		logger.Error("failed to create chainDVS",
+			"err", err,
+			"file", pellcfg.CmtConfig.Pell.InteractorConfigPath,
+			"cfg", fmt.Sprintf("%+v", cfg),
+		)
 		return nil, err
 	}
 
@@ -179,7 +179,6 @@ func execRegisterChainToPell(cmd *cobra.Command,
 
 	logger.Info(cmdName,
 		"k", "v",
-		"sender", senderAddress,
 		"receipt", receipt,
 	)
 

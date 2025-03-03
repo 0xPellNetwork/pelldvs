@@ -20,14 +20,18 @@ var DvsCmd = &cobra.Command{
 }
 
 func init() {
-
-	// make sure the the FROM flag is valid for the following commands
 	_ = chainflags.RequireFromFlagPersistentForCmds(
+		addPoolsCmd,
+		addSupportedChainCmd,
 		createGroupCmd,
-		setOperatorSetCmd,
+		createRegistryRouterCmd,
+		pauseRegistryRouterCmd,
 		setEjectionCooldownCmd,
-		setMinimumStakeForGroupCmd,
 		setEjectorCmd,
+		setMinimumStakeForGroupCmd,
+		setOperatorSetCmd,
+		syncGroupCmd,
+		unPauseRegistryRouterCmd,
 		updateDVSMetadataURICmd,
 		updateOperatorsCmd,
 	)

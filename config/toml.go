@@ -426,5 +426,5 @@ operator_ecdsa_private_key_store_path = "{{ .Pell.OperatorECDSAPrivateKeyStorePa
 operator_bls_private_key_store_path = "{{ .Pell.OperatorBLSPrivateKeyStorePath }}"
 
 # Chain config path
-interfactor_config_path = "{{ .Pell.InteractorConfigPath }}"
+interactor_config_path = "{{ .Pell.InteractorConfigPath }}"
 `

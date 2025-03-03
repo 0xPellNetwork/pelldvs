@@ -22,28 +22,16 @@ import (
 var createRegistryRouterFlagInitOwner = &chainflags.StringFlag{
 	Name:  "initial-owner",
 	Usage: "the initial owner of the contract",
-	Aliases: chainflags.NewAliases(
-		"initial_owner",
-		"initialOwner",
-	),
 }
 
 var createRegistryRouterFlagDVSChainApprover = &chainflags.StringFlag{
 	Name:  "dvs-chain-approver",
 	Usage: "the churn approver of the contract",
-	Aliases: chainflags.NewAliases(
-		"dvs_chain_approver",
-		"dvsChainApprover",
-	),
 }
 
 var createRegistryRouterFlagChurnApprover = &chainflags.StringFlag{
 	Name:  "churn-approver",
 	Usage: "the churn approver of the contract",
-	Aliases: chainflags.NewAliases(
-		"churn_approver",
-		"churnApprover",
-	),
 }
 
 var createRegistryRouterFlagEjector = &chainflags.StringFlag{
@@ -64,30 +52,18 @@ var createRegistryRouterFlagUnpauser = &chainflags.StringFlag{
 var createRegistryRouterFlagInitialPausedStatus = &chainflags.StringFlag{
 	Name:  "initial-paused-status",
 	Usage: "the initial paused status of the contract",
-	Aliases: chainflags.NewAliases(
-		"initial_paused_status",
-		"initialPausedStatus",
-	),
 }
 
 // save to file flag
 var createRegistryRouterFlagSaveToFile = &chainflags.StringFlag{
 	Name:  "save-to-file",
 	Usage: "save the contract address to file",
-	Aliases: chainflags.NewAliases(
-		"save_to_file",
-		"saveToFile",
-	),
 }
 
 // save to file flag
 var createRegistryRouterFlagForceSave = &chainflags.StringFlag{
 	Name:  "force-save",
 	Usage: "force save the contract address to file",
-	Aliases: chainflags.NewAliases(
-		"force_save",
-		"forceSave",
-	),
 }
 
 func init() {
@@ -110,9 +86,10 @@ func init() {
 var createRegistryRouterCmd = &cobra.Command{
 	Use:   "create-registry-router",
 	Short: "Create RegistryRouter",
-	Long:  `Create RegistryRouter TransparentUpgradeableProxy for each DVS`,
-	Example: `
-pelldvs client dvs create-registry-router  --from <owner_key> \
+	Long: `
+pelldvs client dvs create-registry-router \
+	--from <owner_key> \
+    --rpc-url <eth rpc url> \
 	--registry-router-factory <registry_router_factory_address> \
     --initial-owner <owner_address> \
     --dvs-chain-approver <dvs_chain_approver_address> \
@@ -121,25 +98,26 @@ pelldvs client dvs create-registry-router  --from <owner_key> \
     --pauser <pauser_address> \
     --unpauser <unpauser_address> \
     --initial-paused-status false \
-    --rpc-url <eth rpc url> \
 	--save-to-file /path/to/registryRouterAddress.json \
 	--force-save true
-
-pelldvs client dvs create-registry-router --from pell-localnet-deployer \
-	--registry-router-factory 0x4826533B4897376654Bb4d4AD88B7faFD0C98528 \
-    --initial-owner 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 \
-	--dvs-chain-approver 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 \
-	--churn-approver 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 \
-    --ejector 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 \
-    --pauser 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 \
-    --unpauser 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 \
-    --initial-paused-status false \
-    --rpc-url http://localhost:8545 \
+`,
+	Example: `
+pelldvs client dvs create-registry-router \
+	--from pell-localnet-deployer \
+	--rpc-url http://localhost:8545 \
+	--registry-router-factory 0x1234567890123456789012345678901234567890 \
+	--initial-owner 0x1234567890123456789012345678901234567890 \
+	--dvs-chain-approver 0x1234567890123456789012345678901234567890 \
+	--churn-approver 0x1234567890123456789012345678901234567890 \
+	--ejector 0x1234567890123456789012345678901234567890 \
+	--pauser 0x1234567890123456789012345678901234567890 \
+	--unpauser 0x1234567890123456789012345678901234567890 \
+	--initial-paused-status false \
 	--save-to-file /tmp/registryRouterAddress.json \
 	--force-save true
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return handleCreateRegistryRouter(cmd, chainflags.FromKeyNameFlag.Value)
+		return handleCreateRegistryRouter(cmd)
 	},
 }
 
@@ -156,8 +134,8 @@ func parseBoolValueFromString(s string) bool {
 	return false
 }
 
-func handleCreateRegistryRouter(cmd *cobra.Command, keyName string) error {
-	kpath := keys.GetKeysPath(pellcfg.CmtConfig, keyName)
+func handleCreateRegistryRouter(cmd *cobra.Command) error {
+	kpath := keys.GetKeysPath(pellcfg.CmtConfig, chainflags.FromKeyNameFlag.Value)
 	if !kpath.IsECDSAExist() {
 		return fmt.Errorf("ECDSA key does not exist %s", kpath.ECDSA)
 	}
@@ -211,11 +189,11 @@ func handleCreateRegistryRouter(cmd *cobra.Command, keyName string) error {
 	return err
 }
 
-func execCreateRegistryRouter(cmd *cobra.Command, params *chaintypes.CreateRegistryRouterRequest, privKeyPath string) (
-	*chaintypes.CreateRegistryRouterResponse, error,
-) {
-	cmdName := "handleCreateRegistryRouter"
-
+func execCreateRegistryRouter(cmd *cobra.Command,
+	params *chaintypes.CreateRegistryRouterRequest,
+	privKeyPath string,
+) (*chaintypes.CreateRegistryRouterResponse, error) {
+	cmdName := utils.GetPrettyCommandName(cmd)
 	logger.Info(fmt.Sprintf("%s start", cmdName),
 		"privKeyPath", privKeyPath,
 		"params", params,
@@ -230,9 +208,28 @@ func execCreateRegistryRouter(cmd *cobra.Command, params *chaintypes.CreateRegis
 		"sender", senderAddress,
 	)
 
-	chainDVS, _, err := utils.NewDVSFromFromFile(cmd, pellcfg.CmtConfig.Pell.InteractorConfigPath, logger)
+	cfg, err := utils.LoadChainConfig(cmd, pellcfg.CmtConfig.Pell.InteractorConfigPath, logger)
 	if err != nil {
-		logger.Error("failed to create operator", "err", err, "file", pellcfg.CmtConfig.Pell.InteractorConfigPath)
+		logger.Error("failed to load chain config", "err", err, "file", pellcfg.CmtConfig.Pell.InteractorConfigPath)
+		return nil, err
+	}
+	logger.Info("chain config details", "chaincfg", fmt.Sprintf("%+v", cfg))
+
+	var chainConfigChecker = utils.NewChainConfigChecker(cfg)
+	if !chainConfigChecker.HasRPCURL() {
+		return nil, fmt.Errorf("rpc url is required")
+	}
+	if !chainConfigChecker.IsValidPellRegistryRouterFactory() {
+		return nil, fmt.Errorf("pell registry router factory is required")
+	}
+
+	chainDVS, err := utils.NewDVSFromCfg(cfg, logger)
+	if err != nil {
+		logger.Error("failed to create chainDVS",
+			"err", err,
+			"file", pellcfg.CmtConfig.Pell.InteractorConfigPath,
+			"cfg", fmt.Sprintf("%+v", cfg),
+		)
 		return nil, err
 	}
 

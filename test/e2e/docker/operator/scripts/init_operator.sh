@@ -12,11 +12,10 @@ function load_defaults {
   export PELLDVS_HOME=${PELLDVS_HOME:-/root/.pelldvs}
   export ETH_RPC_URL=${ETH_RPC_URL:-http://eth:8545}
   export ETH_WS_URL=${ETH_WS_URL:-ws://eth:8545}
-  export SERVICE_CHAIN_RPC_URL=${SERVICE_CHAIN_RPC_URL:-http://eth:8545}
   export CHAIN_ID=${CHAIN_ID:-1337}
 
-  export SERVICE_CHAIN_RPC_URL=${SERVICE_CHAIN_RPC_URL:-$ETH_RPC_URL}
-  export SERVICE_CHAIN_WS_URL=${SERVICE_CHAIN_WS_URL:-$ETH_WS_URL}
+  export SERVICE_CHAIN_RPC_URL=${SERVICE_CHAIN_RPC_URL:-http://eth:8545}
+  export SERVICE_CHAIN_WS_URL=${SERVICE_CHAIN_WS_URL:-ws://eth:8545}
 
   source "$(dirname "$0")/utils.sh"
 }
@@ -53,27 +52,28 @@ function init_pelldvs_config {
 {
     "rpc_url": "$ETH_RPC_URL",
     "chain_id": $CHAIN_ID,
-    "indexer_start_height": $AGGREGATOR_INDEXER_START_HEIGHT,
-    "indexer_batch_size": $AGGREGATOR_INDEXER_BATCH_SIZE,
     "contract_config": {
-			"pell_registry_router_factory": "$REGISTRY_ROUTER_FACTORY_ADDRESS",
-    	"pell_dvs_directory": "$PELL_DVS_DIRECTORY",
-    	"pell_delegation_manager": "$PELL_DELEGATION_MNAGER",
-    	"pell_registry_router": "$REGISTRY_ROUTER_ADDRESS",
-			"dvs_configs": {
-				"$CHAIN_ID": {
-					"chain_id": $CHAIN_ID,
-					"rpc_url": "$SERVICE_CHAIN_RPC_URL",
-					"operator_info_provider": "$DVS_OPERATOR_INFO_PROVIDER",
-					"operator_key_manager": "$DVS_OPERATOR_KEY_MANAGER",
-					"central_scheduler": "$DVS_CENTRAL_SCHEDULER",
-					"operator_index_manager": "$DVS_OPERATOR_INDEX_MANAGER"
-				}
-			}
+      "indexer_start_height": $AGGREGATOR_INDEXER_START_HEIGHT,
+      "indexer_batch_size": $AGGREGATOR_INDEXER_BATCH_SIZE,
+      "pell_registry_router_factory": "$REGISTRY_ROUTER_FACTORY_ADDRESS",
+      "pell_dvs_directory": "$PELL_DVS_DIRECTORY",
+      "pell_delegation_manager": "$PELL_DELEGATION_MNAGER",
+      "pell_registry_router": "$REGISTRY_ROUTER_ADDRESS",
+      "dvs_configs": {
+        "$CHAIN_ID": {
+          "chain_id": $CHAIN_ID,
+          "rpc_url": "$SERVICE_CHAIN_RPC_URL",
+          "operator_info_provider": "$DVS_OPERATOR_INFO_PROVIDER",
+          "operator_key_manager": "$DVS_OPERATOR_KEY_MANAGER",
+          "central_scheduler": "$DVS_CENTRAL_SCHEDULER",
+          "operator_index_manager": "$DVS_OPERATOR_INDEX_MANAGER"
+        }
+      }
     }
 }
 EOF
 
+cat $PELLDVS_HOME/config/interactor_config.json
 }
 
 function setup_operator_key {

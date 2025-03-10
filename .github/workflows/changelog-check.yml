@@ -1,0 +1,21 @@
+name: Changelog Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  changelog-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check PR number in changelog
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          if ! grep -q "#${PR_NUMBER}[^0-9]" CHANGELOG.md; then
+            echo "Error: PR #${PR_NUMBER} is not mentioned in CHANGELOG.md"
+            echo "Please add your changes to the changelog following the format in CONTRIBUTING.md"
+            exit 1
+          fi
+          echo "✅ PR #${PR_NUMBER} found in CHANGELOG.md" 

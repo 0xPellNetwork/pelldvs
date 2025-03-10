@@ -13,7 +13,7 @@ import (
 
 	"github.com/0xPellNetwork/pelldvs-libs/log"
 	"github.com/0xPellNetwork/pelldvs/config"
-	"github.com/0xPellNetwork/pelldvs/crypto/ed25519"
+	"github.com/0xPellNetwork/pelldvs/crypto/bls"
 	"github.com/0xPellNetwork/pelldvs/p2p"
 	"github.com/0xPellNetwork/pelldvs/privval"
 	e2e "github.com/0xPellNetwork/pelldvs/test/e2e/pkg"
@@ -88,17 +88,15 @@ func Setup(testnet *e2e.Testnet, infp infra.Provider) error {
 			return err
 		}
 
-		(privval.NewFilePV(node.PrivvalKey,
-			filepath.Join(nodeDir, PrivvalKeyFile),
-			filepath.Join(nodeDir, PrivvalStateFile),
-		)).Save()
+		blsKeys, err := bls.GenRandomBlsKeys()
+		if err != nil {
+		}
+
+		(privval.NewFilePV(*blsKeys, filepath.Join(nodeDir, PrivvalKeyFile)).Save())
 
 		// Set up a dummy validator. PellDVS requires a file PV even when not used, so we
 		// give it a dummy such that it will fail if it actually tries to use it.
-		(privval.NewFilePV(ed25519.GenPrivKey(),
-			filepath.Join(nodeDir, PrivvalDummyKeyFile),
-			filepath.Join(nodeDir, PrivvalDummyStateFile),
-		)).Save()
+		(privval.NewFilePV(*blsKeys, filepath.Join(nodeDir, PrivvalDummyKeyFile)).Save())
 	}
 
 	if testnet.Prometheus {

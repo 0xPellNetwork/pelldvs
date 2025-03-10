@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## [Released v0.3.0]
+## [Unreleased v0.3.0]
 
 ### Features
 

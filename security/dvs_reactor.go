@@ -29,6 +29,7 @@ type DVSReactor struct {
 	aggregator        aggtypes.Aggregator
 	dvsRequestIndexer requestindex.DvsRequestIndexer
 	dvsReader         reader.DVSReader
+	privValidator     types.PrivValidator
 }
 
 func CreateDVSReactor(
@@ -39,6 +40,7 @@ func CreateDVSReactor(
 	dvsRequestIndexer requestindex.DvsRequestIndexer,
 	db dbm.DB,
 	logger log.Logger,
+	privValidator types.PrivValidator,
 ) (DVSReactor, error) {
 	dvsReqStore, err := NewStore(storeDir)
 	if err != nil {
@@ -63,13 +65,10 @@ func CreateDVSReactor(
 		aggregator:        aggregator,
 		dvsRequestIndexer: dvsRequestIndexer,
 		dvsReader:         dvsReader,
+		privValidator:     privValidator,
 	}
 
 	return dvs, nil
-}
-
-func (dvs *DVSReactor) SignMessage(message []byte) (*bls.Signature, error) {
-	return dvs.dvsState.privValidator.SignMessage(message)
 }
 
 func (dvs *DVSReactor) OnQuery(key []byte) ([]byte, []byte, error) {
@@ -163,7 +162,7 @@ func (dvs *DVSReactor) OnRequest(request avsitypes.DVSRequest) (*avsitypes.DVSRe
 		return nil, err
 	}
 
-	signature, err := dvs.SignMessage(responseProcessDVSRequest.ResponseDigest)
+	signature, err := dvs.privValidator.SignBytes(responseProcessDVSRequest.ResponseDigest)
 	if err != nil {
 		dvs.logger.Error("SignMessage failed", "error", err)
 		return nil, err

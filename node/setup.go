@@ -43,7 +43,7 @@ func DefaultNewNode(config *cfg.Config, logger log.Logger) (*Node, error) {
 	}
 
 	return NewNode(config,
-		privval.LoadOrGenFilePV(config.PrivValidatorKeyFile(), config.PrivValidatorStateFile()),
+		privval.LoadOrGenFilePV(config.Pell.OperatorBLSPrivateKeyStorePath),
 		nodeKey,
 		proxy.DefaultClientCreator(config.ProxyApp, config.ABCI, config.DBDir()),
 		cfg.DefaultDBProvider,

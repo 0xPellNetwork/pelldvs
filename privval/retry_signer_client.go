@@ -1,10 +1,9 @@
 package privval
 
 import (
-	"fmt"
 	"time"
 
-	"github.com/0xPellNetwork/pelldvs/crypto"
+	"github.com/0xPellNetwork/pelldvs/crypto/bls"
 )
 
 // RetrySignerClient wraps SignerClient adding retry for each operation (except
@@ -42,21 +41,12 @@ func (sc *RetrySignerClient) Ping() error {
 	return sc.next.Ping()
 }
 
-func (sc *RetrySignerClient) GetPubKey() (crypto.PubKey, error) {
-	var (
-		pk  crypto.PubKey
-		err error
-	)
-	for i := 0; i < sc.retries || sc.retries == 0; i++ {
-		pk, err = sc.next.GetPubKey()
-		if err == nil {
-			return pk, nil
-		}
-		// If remote signer errors, we don't retry.
-		if _, ok := err.(*RemoteSignerError); ok {
-			return nil, err
-		}
-		time.Sleep(sc.timeout)
-	}
-	return nil, fmt.Errorf("exhausted all attempts to get pubkey: %w", err)
+func (sc *RetrySignerClient) GetPubKey() (*bls.G1Point, error) {
+	// TODO implement me
+	panic("implement me")
+}
+
+func (sc *RetrySignerClient) SignBytes(bytes []byte) (*bls.Signature, error) {
+	//TODO implement me
+	panic("implement me")
 }

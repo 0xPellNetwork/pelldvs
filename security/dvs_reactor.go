@@ -188,7 +188,7 @@ func (dvs *DVSReactor) OnRequest(request avsitypes.DVSRequest) (*avsitypes.DVSRe
 		Signature:   &sig,
 		OperatorID:  dvs.dvsState.operatorID,
 		RequestData: request,
-		Digest:      digestArr,
+		Digest:      [32]byte(responseProcessDVSRequest.ResponseDigest),
 	}
 
 	// Create a channel to receive validated response

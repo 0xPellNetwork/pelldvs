@@ -21,6 +21,10 @@ import (
 	"github.com/0xPellNetwork/pelldvs/types"
 )
 
+const (
+	responseDigestLenLimit = 32
+)
+
 type DVSReactor struct {
 	config            config.PellConfig
 	ProxyApp          proxy.AppConns
@@ -148,9 +152,13 @@ func (dvs *DVSReactor) OnRequest(request avsitypes.DVSRequest) (*avsitypes.DVSRe
 		Request:  &request,
 		Operator: operators,
 	})
-
 	if err != nil {
 		return nil, err
+	}
+
+	// Check if responseDigest length is equal to 32
+	if len(responseProcessDVSRequest.ResponseDigest) != responseDigestLenLimit {
+		return nil, fmt.Errorf("responseDigest length is not equal to %d", responseDigestLenLimit)
 	}
 
 	reqResIdx := avsitypes.DVSRequestResult{

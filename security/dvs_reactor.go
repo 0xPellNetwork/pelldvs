@@ -158,7 +158,7 @@ func (dvs *DVSReactor) OnRequest(request avsitypes.DVSRequest) (*avsitypes.DVSRe
 
 	// Check if responseDigest length is equal to 32
 	if len(responseProcessDVSRequest.ResponseDigest) != responseDigestLenLimit {
-		return nil, fmt.Errorf("responseDigest length is not equal to %d", responseDigestLenLimit)
+		return nil, fmt.Errorf("responseDigest length %d is not equal to %d", responseProcessDVSRequest.ResponseDigest, responseDigestLenLimit)
 	}
 
 	reqResIdx := avsitypes.DVSRequestResult{
@@ -178,12 +178,9 @@ func (dvs *DVSReactor) OnRequest(request avsitypes.DVSRequest) (*avsitypes.DVSRe
 	}
 	dvs.logger.Debug("responseWithSignature", "signature", signature)
 
-	var digestArr [32]byte
-	copy(digestArr[:], responseProcessDVSRequest.ResponseDigest)
 	g1p := bls.G1Point{
 		G1Affine: signature.G1Affine,
 	}
-
 	sig := bls.Signature{G1Point: &g1p}
 
 	responseWithSingature := aggtypes.ResponseWithSignature{

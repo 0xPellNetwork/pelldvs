@@ -8,6 +8,8 @@
 
 (CI) [#7](https://github.com/0xPellNetwork/pelldvs/pull/7) ci: add changelog check in CI  
 
+(refactor) [#9](https://github.com/0xPellNetwork/pelldvs/pull/9) refactor: rename abci to avsi  
+
 ### Bug Fixes
 
 ## v0.2.2

@@ -16,6 +16,10 @@ const (
 	// DVSHashKey is a reserved key, used to specify DVS request's hash.
 	// see EventBus#PublishEventTx
 	DVSHashKey = "dvs.hash"
+
+	// DVSHeightKey is a reserved key, used to specify DVS request block's height.
+	DVSHeightKey = "dvs.height"
+	DVSChainID   = "dvs.chainid"
 )
 
 type (

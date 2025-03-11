@@ -87,6 +87,7 @@ type DVSClient interface {
 	) (*ctypes.ResultRequestDvsAsync, error)
 
 	QueryRequest(ctx context.Context, hash string) (*ctypes.ResultDvsRequest, error)
+	SearchRequest(ctx context.Context, query string, pagePtr, perPagePtr *int) (*ctypes.ResultDvsRequestSearch, error)
 }
 
 // RemoteClient is a Client, which can also return the remote network address.

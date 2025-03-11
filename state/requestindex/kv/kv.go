@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"math/big"
+	"strconv"
 	"strings"
 
 	dbm "github.com/cometbft/cometbft-db"
@@ -97,7 +99,7 @@ func (dvsReqIdx *DvsRequestIndex) AddBatch(batch *requestindex.Batch) error {
 
 		if result.ResponseProcessDvsRequest != nil {
 			// index DVS Request by events
-			err = dvsReqIdx.indexEvents(result.ResponseProcessDvsRequest.Events, hash, storeBatch)
+			err = dvsReqIdx.indexEvents(result.DvsRequest.ChainId, result.DvsRequest.Height, result.ResponseProcessDvsRequest.Events, hash, storeBatch)
 			if err != nil {
 				return err
 			}
@@ -105,10 +107,16 @@ func (dvsReqIdx *DvsRequestIndex) AddBatch(batch *requestindex.Batch) error {
 
 		if result.ResponseProcessDvsResponse != nil {
 			// index DVS Response by events
-			err = dvsReqIdx.indexEvents(result.ResponseProcessDvsResponse.Events, hash, storeBatch)
+			err = dvsReqIdx.indexEvents(result.DvsRequest.ChainId, result.DvsRequest.Height, result.ResponseProcessDvsResponse.Events, hash, storeBatch)
 			if err != nil {
 				return err
 			}
+		}
+
+		// index by height (always)
+		err = storeBatch.Set(keyForHeight(result, dvsReqIdx.eventSeq), hash)
+		if err != nil {
+			return err
 		}
 
 		rawBytes, err := proto.Marshal(result)
@@ -138,7 +146,7 @@ func (dvsReqIdx *DvsRequestIndex) Index(result *avsi.DVSRequestResult) error {
 
 	if result.ResponseProcessDvsRequest != nil {
 		// index DVS Request by events
-		err = dvsReqIdx.indexEvents(result.ResponseProcessDvsRequest.Events, hash, batch)
+		err = dvsReqIdx.indexEvents(result.DvsRequest.ChainId, result.DvsRequest.Height, result.ResponseProcessDvsRequest.Events, hash, batch)
 		if err != nil {
 			return err
 		}
@@ -146,10 +154,16 @@ func (dvsReqIdx *DvsRequestIndex) Index(result *avsi.DVSRequestResult) error {
 
 	if result.ResponseProcessDvsResponse != nil {
 		// index DVS Response by events
-		err = dvsReqIdx.indexEvents(result.ResponseProcessDvsResponse.Events, hash, batch)
+		err = dvsReqIdx.indexEvents(result.DvsRequest.ChainId, result.DvsRequest.Height, result.ResponseProcessDvsResponse.Events, hash, batch)
 		if err != nil {
 			return err
 		}
+	}
+
+	// index by height (always)
+	err = batch.Set(keyForHeight(result, dvsReqIdx.eventSeq), hash)
+	if err != nil {
+		return err
 	}
 
 	rawBytes, err := proto.Marshal(result)
@@ -165,7 +179,7 @@ func (dvsReqIdx *DvsRequestIndex) Index(result *avsi.DVSRequestResult) error {
 	return batch.WriteSync()
 }
 
-func (dvsReqIdx *DvsRequestIndex) indexEvents(events []avsi.Event, hash []byte, store dbm.Batch) error {
+func (dvsReqIdx *DvsRequestIndex) indexEvents(chainid, height int64, events []avsi.Event, hash []byte, store dbm.Batch) error {
 
 	if dvsReqIdx.eventSeq == nil {
 		seq, err := dvsReqIdx.GetEventSeq()
@@ -199,7 +213,10 @@ func (dvsReqIdx *DvsRequestIndex) indexEvents(events []avsi.Event, hash []byte, 
 				// store.Set(keyForEvent(compositeTag, attr.Value, result, dvsReqIdx.eventSeq), hash)
 				// result.Height,
 				// result.Index,
-				err := store.Set(keyForEvent(compositeTag, attr.Value, dvsReqIdx.eventSeq), hash)
+
+				dvsReqIdx.log.Info("event key", "keyForEvent(compositeTag, attr.Value, dvsReqIdx.eventSeq)",
+					string(keyForEvent(compositeTag, attr.Value, chainid, height, dvsReqIdx.eventSeq)))
+				err := store.Set(keyForEvent(compositeTag, attr.Value, chainid, height, dvsReqIdx.eventSeq), hash)
 				if err != nil {
 					return err
 				}
@@ -212,18 +229,15 @@ func (dvsReqIdx *DvsRequestIndex) indexEvents(events []avsi.Event, hash []byte, 
 		if err != nil {
 			return err
 		}
+	} else {
+		dvsReqIdx.eventSeq = dvsReqIdx.eventSeq.Add(dvsReqIdx.eventSeq, big.NewInt(1))
+		err := store.Set([]byte(eventSeqKey), dvsReqIdx.eventSeq.Bytes())
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
-}
-
-// func keyForEvent(key string, value string, result *avsi.ResponseProcessDVSRequest, eventSeq int64) []byte {
-func keyForEvent(key string, value string, eventSeq *big.Int) []byte {
-	return []byte(fmt.Sprintf("%s/%s/%s",
-		key,
-		value,
-		eventSeqSeparator+eventSeq.String(), //strconv.FormatInt(eventSeq, 10),
-	))
 }
 
 // Search performs a search using the given query.
@@ -237,7 +251,7 @@ func (dvsReqIdx *DvsRequestIndex) Search(ctx context.Context, q *query.Query) ([
 	default:
 	}
 
-	// var hashesInitialized bool
+	var hashesInitialized bool
 	filteredHashes := make(map[string][]byte)
 
 	conditions := q.Syntax()
@@ -258,9 +272,85 @@ func (dvsReqIdx *DvsRequestIndex) Search(ctx context.Context, q *query.Query) ([
 		}
 	}
 
+	// conditions to skip because they're handled before "everything else"
+	skipIndexes := make([]int, 0)
+	var heightInfo HeightInfo
+
+	// If we are not matching events and tx.height = 3 occurs more than once, the later value will
+	// overwrite the first one.
+	conditions, heightInfo = dedupHeight(conditions)
+
+	if !heightInfo.onlyHeightEq {
+		skipIndexes = append(skipIndexes, heightInfo.heightEqIdx)
+	}
+	// extract ranges
+	// if both upper and lower bounds exist, it's better to get them in order not
+	// no iterate over kvs that are not within range.
+	ranges, rangeIndexes, heightRange := LookForRangesWithHeight(conditions)
+	heightInfo.heightRange = heightRange
+
+	dvsReqIdx.log.Info("heightInfo",
+		"heightInfo.height", heightInfo.height,
+		"heightInfo.heightEqIdx", heightInfo.heightEqIdx,
+		"heightInfo.onlyHeightEq", heightInfo.onlyHeightEq,
+		"heightInfo.onlyHeightRange", heightInfo.onlyHeightRange,
+		"len(ranges)", len(ranges))
+
+	if len(ranges) > 0 {
+		skipIndexes = append(skipIndexes, rangeIndexes...)
+
+		for _, qr := range ranges {
+
+			// If we have a query range over height and want to still look for
+			// specific event values we do not want to simply return all
+			// transactios in this height range. We remember the height range info
+			// and pass it on to match() to take into account when processing events.
+			//if qr.Key == types.TxHeightKey && !heightInfo.onlyHeightRange {
+			if qr.Key == types.DVSHeightKey && !heightInfo.onlyHeightRange {
+				continue
+			}
+			if !hashesInitialized {
+
+				filteredHashes = dvsReqIdx.matchRange(ctx, qr, startKey(qr.Key), filteredHashes, true, heightInfo)
+				hashesInitialized = true
+
+				// Ignore any remaining conditions if the first condition resulted
+				// in no matches (assuming implicit AND operand).
+				if len(filteredHashes) == 0 {
+					break
+				}
+			} else {
+				filteredHashes = dvsReqIdx.matchRange(ctx, qr, startKey(qr.Key), filteredHashes, false, heightInfo)
+			}
+		}
+	}
+
+	// if there is a height condition ("tx.height=3"), extract it
+
+	conditions, chainID := lookForChainIDAndRemove(conditions)
+
 	// for all other conditions
-	for _, c := range conditions {
-		filteredHashes = dvsReqIdx.match(ctx, c, startKeyForCondition(c, 0), filteredHashes, true)
+	for i, c := range conditions {
+		if intInSlice(i, skipIndexes) {
+			continue
+		}
+
+		dvsReqIdx.log.Info("match",
+			"heightInfo.height", heightInfo.height,
+			"startKeyForCondition(c, heightInfo.height)", string(startKeyForCondition(c, chainID, heightInfo.height)),
+			"c.Op", c.Op)
+
+		if !hashesInitialized {
+			filteredHashes = dvsReqIdx.match(ctx, c, startKeyForCondition(c, chainID, heightInfo.height), filteredHashes, true, heightInfo)
+			hashesInitialized = true
+			// Ignore any remaining conditions if the first condition resulted
+			// in no matches (assuming implicit AND operand).
+			if len(filteredHashes) == 0 {
+				break
+			}
+		} else {
+			filteredHashes = dvsReqIdx.match(ctx, c, startKeyForCondition(c, chainID, heightInfo.height), filteredHashes, false, heightInfo)
+		}
 	}
 
 	results := make([]*avsi.DVSRequestResult, 0, len(filteredHashes))
@@ -270,7 +360,7 @@ RESULTS_LOOP:
 
 		res, err := dvsReqIdx.Get(h)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get DVSRequest{%X}: %w", h, err)
+			return nil, fmt.Errorf("failed to get Tx{%X}: %w", h, err)
 		}
 		hashString := string(h)
 		if _, ok := resultMap[hashString]; !ok {
@@ -298,6 +388,29 @@ func lookForHash(conditions []syntax.Condition) (hash []byte, ok bool, err error
 	return
 }
 
+func lookForChainIDAndRemove(conditions []syntax.Condition) ([]syntax.Condition, int64) {
+
+	chainID := int64(-1)
+	for _, c := range conditions {
+		if c.Tag == types.DVSChainID {
+			res, _ := c.Arg.Number().Int64()
+			chainID = res
+		}
+	}
+
+	return removeChainIDElements(conditions), chainID
+}
+
+func removeChainIDElements(conditions []syntax.Condition) []syntax.Condition {
+	result := make([]syntax.Condition, 0, len(conditions))
+	for _, c := range conditions {
+		if c.Tag != types.DVSChainID {
+			result = append(result, c)
+		}
+	}
+	return result
+}
+
 func (*DvsRequestIndex) setTmpHashes(tmpHeights map[string][]byte, key, value []byte) {
 	eventSeq := extractEventSeqFromKey(key)
 
@@ -305,10 +418,144 @@ func (*DvsRequestIndex) setTmpHashes(tmpHeights map[string][]byte, key, value []
 	valueCopy := make([]byte, len(value))
 	copy(valueCopy, value)
 
-	tmpHeights[string(valueCopy)+eventSeq] = valueCopy
+	_ = eventSeq
+	//tmpHeights[string(valueCopy)+eventSeq] = valueCopy
+	tmpHeights[string(valueCopy)] = valueCopy
 }
 
-// match returns all matching DVS Requests by hash that meet a given condition and start
+// matchRange returns all matching txs by hash that meet a given queryRange and
+// start key. An already filtered result (filteredHashes) is provided such that
+// any non-intersecting matches are removed.
+//
+// NOTE: filteredHashes may be empty if no previous condition has matched.
+func (dvsReqIdx *DvsRequestIndex) matchRange(
+	ctx context.Context,
+	qr QueryRange,
+	startKey []byte,
+	filteredHashes map[string][]byte,
+	firstRun bool,
+	heightInfo HeightInfo,
+) map[string][]byte {
+	// A previous match was attempted but resulted in no matches, so we return
+	// no matches (assuming AND operand).
+	if !firstRun && len(filteredHashes) == 0 {
+		return filteredHashes
+	}
+
+	tmpHashes := make(map[string][]byte)
+
+	it, err := dbm.IteratePrefix(dvsReqIdx.store, startKey)
+	if err != nil {
+		panic(err)
+	}
+	defer it.Close()
+	bigIntValue := new(big.Int)
+
+LOOP:
+	for ; it.Valid(); it.Next() {
+		// TODO: We need to make a function for getting it.Key() as a byte slice with no copies.
+		// It currently copies the source data (which can change on a subsequent .Next() call) but that
+		// is not an issue for us.
+		key := it.Key()
+
+		if !isTagKey(key) {
+			continue
+		}
+
+		if _, ok := qr.AnyBound().(*big.Float); ok {
+
+			value := extractValueFromKey(key)
+			v, ok := bigIntValue.SetString(value, 10)
+
+			var vF *big.Float
+			if !ok {
+				vF, _, err = big.ParseFloat(value, 10, 125, big.ToNearestEven)
+				if err != nil {
+					continue LOOP
+				}
+
+			}
+			if qr.Key != types.DVSHeightKey {
+				keyHeight, err := extractHeightFromKey(key)
+
+				if err != nil {
+					dvsReqIdx.log.Error("failure to parse height from key:", err)
+					continue
+				}
+
+				withinBounds, err := checkHeightConditions(heightInfo, keyHeight)
+				if err != nil {
+					dvsReqIdx.log.Error("failure checking for height bounds:", err)
+					continue
+				}
+				if !withinBounds {
+					continue
+				}
+			}
+			var withinBounds bool
+			var err error
+			if !ok {
+				withinBounds, err = checkBounds(qr, vF)
+			} else {
+				withinBounds, err = checkBounds(qr, v)
+			}
+			if err != nil {
+				dvsReqIdx.log.Error("failed to parse bounds:", err)
+			} else if withinBounds {
+				dvsReqIdx.setTmpHashes(tmpHashes, key, it.Value())
+			}
+
+			// XXX: passing time in a ABCI Events is not yet implemented
+			// case time.Time:
+			// 	v := strconv.ParseInt(extractValueFromKey(it.Key()), 10, 64)
+			// 	if v == r.upperBound {
+			// 		break
+			// 	}
+		}
+
+		// Potentially exit early.
+		select {
+		case <-ctx.Done():
+			break LOOP
+		default:
+		}
+	}
+	if err := it.Error(); err != nil {
+		panic(err)
+	}
+
+	if len(tmpHashes) == 0 || firstRun {
+		// Either:
+		//
+		// 1. Regardless if a previous match was attempted, which may have had
+		// results, but no match was found for the current condition, then we
+		// return no matches (assuming AND operand).
+		//
+		// 2. A previous match was not attempted, so we return all results.
+		return tmpHashes
+	}
+
+	// Remove/reduce matches in filteredHashes that were not found in this
+	// match (tmpHashes).
+REMOVE_LOOP:
+	for k, v := range filteredHashes {
+		tmpHash := tmpHashes[k]
+		if tmpHash == nil || !bytes.Equal(tmpHashes[k], v) {
+			delete(filteredHashes, k)
+
+			// Potentially exit early.
+			select {
+			case <-ctx.Done():
+				break REMOVE_LOOP
+			default:
+			}
+		}
+	}
+
+	return filteredHashes
+}
+
+// match returns all matching txs by hash that meet a given condition and start
 // key. An already filtered result (filteredHashes) is provided such that any
 // non-intersecting matches are removed.
 //
@@ -319,7 +566,9 @@ func (dvsReqIdx *DvsRequestIndex) match(
 	startKeyBz []byte,
 	filteredHashes map[string][]byte,
 	firstRun bool,
+	heightInfo HeightInfo,
 ) map[string][]byte {
+
 	// A previous match was attempted but resulted in no matches, so we return
 	// no matches (assuming AND operand).
 	if !firstRun && len(filteredHashes) == 0 {
@@ -330,6 +579,7 @@ func (dvsReqIdx *DvsRequestIndex) match(
 
 	switch {
 	case c.Op == syntax.TEq:
+
 		it, err := dbm.IteratePrefix(dvsReqIdx.store, startKeyBz)
 		if err != nil {
 			panic(err)
@@ -338,11 +588,28 @@ func (dvsReqIdx *DvsRequestIndex) match(
 
 	EQ_LOOP:
 		for ; it.Valid(); it.Next() {
-
 			// If we have a height range in a query, we need only transactions
 			// for this height
 			key := it.Key()
+
+			keyHeight, err := extractHeightFromKey(key)
+			if err != nil {
+				dvsReqIdx.log.Error("failure to parse height from key:", err)
+				continue
+			}
+
+			withinBounds, err := checkHeightConditions(heightInfo, keyHeight)
+			if err != nil {
+				dvsReqIdx.log.Error("failure checking for height bounds:", err)
+				continue
+			}
+
+			if !withinBounds {
+				continue
+			}
+
 			dvsReqIdx.setTmpHashes(tmpHashes, key, it.Value())
+
 			// Potentially exit early.
 			select {
 			case <-ctx.Done():
@@ -366,6 +633,19 @@ func (dvsReqIdx *DvsRequestIndex) match(
 	EXISTS_LOOP:
 		for ; it.Valid(); it.Next() {
 			key := it.Key()
+			keyHeight, err := extractHeightFromKey(key)
+			if err != nil {
+				dvsReqIdx.log.Error("failure to parse height from key:", err)
+				continue
+			}
+			withinBounds, err := checkHeightConditions(heightInfo, keyHeight)
+			if err != nil {
+				dvsReqIdx.log.Error("failure checking for height bounds:", err)
+				continue
+			}
+			if !withinBounds {
+				continue
+			}
 			dvsReqIdx.setTmpHashes(tmpHashes, key, it.Value())
 
 			// Potentially exit early.
@@ -380,6 +660,7 @@ func (dvsReqIdx *DvsRequestIndex) match(
 		}
 
 	case c.Op == syntax.TContains:
+
 		// XXX: startKey does not apply here.
 		// For example, if startKey = "account.owner/an/" and search query = "account.owner CONTAINS an"
 		// we can't iterate with prefix "account.owner/an/" because we might miss keys like "account.owner/Ulan/"
@@ -397,6 +678,19 @@ func (dvsReqIdx *DvsRequestIndex) match(
 
 			if strings.Contains(extractValueFromKey(it.Key()), c.Arg.Value()) {
 				key := it.Key()
+				keyHeight, err := extractHeightFromKey(key)
+				if err != nil {
+					dvsReqIdx.log.Error("failure to parse height from key:", err)
+					continue
+				}
+				withinBounds, err := checkHeightConditions(heightInfo, keyHeight)
+				if err != nil {
+					dvsReqIdx.log.Error("failure checking for height bounds:", err)
+					continue
+				}
+				if !withinBounds {
+					continue
+				}
 				dvsReqIdx.setTmpHashes(tmpHashes, key, it.Value())
 			}
 
@@ -463,6 +757,28 @@ func isTagKey(key []byte) bool {
 	return false
 }
 
+func extractHeightFromKey(key []byte) (int64, error) {
+	// the height is the second last element in the key.
+	// Find the position of the last occurrence of tagKeySeparator
+	endPos := bytes.LastIndexByte(key, tagKeySeparatorRune)
+	if endPos == -1 {
+		return 0, errors.New("separator not found")
+	}
+
+	// Find the position of the second last occurrence of tagKeySeparator
+	startPos := bytes.LastIndexByte(key[:endPos-1], tagKeySeparatorRune)
+	if startPos == -1 {
+		return 0, errors.New("second last separator not found")
+	}
+
+	// Extract the height part of the key
+	height, err := strconv.ParseInt(string(key[startPos+1:endPos]), 10, 64)
+	if err != nil {
+		return 0, err
+	}
+	return height, nil
+}
+
 func extractValueFromKey(key []byte) string {
 	// Find the positions of tagKeySeparator in the byte slice
 	var indices []int
@@ -478,7 +794,7 @@ func extractValueFromKey(key []byte) string {
 	}
 
 	// Extract the value between the first and second last occurrence of tagKeySeparator
-	value := key[indices[0]+1 : indices[len(indices)-2]]
+	value := key[indices[0]+1 : indices[len(indices)-3]]
 
 	// Trim any leading or trailing whitespace
 	value = bytes.TrimSpace(value)
@@ -498,10 +814,16 @@ func extractEventSeqFromKey(key []byte) string {
 	return "0"
 }
 
-func startKeyForCondition(c syntax.Condition, height int64) []byte {
-	if height > 0 {
-		return startKey(c.Tag, c.Arg.Value(), height)
+func startKeyForCondition(c syntax.Condition, chainID, height int64) []byte {
+
+	if chainID > 0 {
+		if height > 0 {
+			return startKey(c.Tag, c.Arg.Value(), chainID, height)
+		} else {
+			return startKey(c.Tag, c.Arg.Value(), chainID)
+		}
 	}
+
 	return startKey(c.Tag, c.Arg.Value())
 }
 
@@ -511,4 +833,27 @@ func startKey(fields ...interface{}) []byte {
 		b.Write([]byte(fmt.Sprintf("%v", f) + tagKeySeparator))
 	}
 	return b.Bytes()
+}
+
+func keyForEvent(key string, value string, chainid, height int64, eventSeq *big.Int) []byte {
+	return []byte(fmt.Sprintf("%s/%s/%d/%d/%s",
+		key,
+		value,
+		chainid,
+		height,
+		eventSeqSeparator+eventSeq.String(), //strconv.FormatInt(eventSeq, 10),
+	))
+}
+
+func keyForHeight(result *avsi.DVSRequestResult, idx *big.Int) []byte {
+	return []byte(fmt.Sprintf("%s/%d/%d/%d/%s%s",
+		types.DVSHeightKey,
+		result.DvsRequest.Height,
+		result.DvsRequest.ChainId,
+		result.DvsRequest.Height,
+		idx.String(),
+		// Added to facilitate having the eventSeq in event keys
+		// Otherwise queries break expecting 5 entries
+		eventSeqSeparator+"0",
+	))
 }

@@ -66,6 +66,14 @@ func (app *Application) Info(context.Context, *types.RequestInfo) (*types.Respon
 	return &types.ResponseInfo{}, nil
 }
 
+// createEventWithAttributes creates a new Event with the given type and attributes
+func createEvent(eventType string, attributes ...types.EventAttribute) types.Event {
+	return types.Event{
+		Type:       eventType,
+		Attributes: attributes,
+	}
+}
+
 func (app *Application) ProcessDVSRequest(_ context.Context, req *types.RequestProcessDVSRequest) (*types.ResponseProcessDVSRequest, error) {
 
 	parts := bytes.Split(req.Request.Data, []byte("="))
@@ -79,39 +87,48 @@ func (app *Application) ProcessDVSRequest(_ context.Context, req *types.RequestP
 	}
 
 	events := make([]types.Event, 0, 10)
-	attrs := make([]types.EventAttribute, 0)
-	attrs = append(attrs, types.EventAttribute{
-		Key:   "First Event Key",
-		Value: "First Event Value",
-		Index: true,
-	})
 
-	events = append(events, types.Event{
-		Type:       "FirstEventType",
-		Attributes: attrs,
-	})
+	// First event
+	events = append(events, createEvent("FirstEventType",
+		types.EventAttribute{
+			Key:   "FirstEventKey",
+			Value: "FirstEventValue",
+			Index: true,
+		},
+	))
 
-	attrs = append(attrs, types.EventAttribute{
-		Key:   "SecondEventKey",
-		Value: "SecondEventValue",
-		Index: true,
-	})
+	// Second event
+	events = append(events, createEvent("SecondEventType",
+		types.EventAttribute{
+			Key:   "FirstEventKey",
+			Value: "FirstEventValue",
+			Index: true,
+		},
+		types.EventAttribute{
+			Key:   "SecondEventKey",
+			Value: "SecondEventValue",
+			Index: true,
+		},
+	))
 
-	events = append(events, types.Event{
-		Type:       "SecondEventType",
-		Attributes: attrs,
-	})
-
-	attrs = append(attrs, types.EventAttribute{
-		Key:   "ThirdEventKey",
-		Value: "Third Event Value",
-		Index: true,
-	})
-
-	events = append(events, types.Event{
-		Type:       "ThirdEventType",
-		Attributes: attrs,
-	})
+	// Third event
+	events = append(events, createEvent("ThirdEventType",
+		types.EventAttribute{
+			Key:   "FirstEventKey",
+			Value: "FirstEventValue",
+			Index: true,
+		},
+		types.EventAttribute{
+			Key:   "SecondEventKey",
+			Value: "SecondEventValue",
+			Index: true,
+		},
+		types.EventAttribute{
+			Key:   "ThirdEventKey",
+			Value: "ThirdEventValue",
+			Index: true,
+		},
+	))
 
 	return &types.ResponseProcessDVSRequest{
 		Response:       []byte(key),

@@ -73,8 +73,8 @@ func (env *Environment) RequestDVSAsync(ctx *rpctypes.Context,
 
 }
 
+// QueryRequest allows you to query for a DVS request result. It returns a
 func (env *Environment) QueryRequest(_ *rpctypes.Context, hash string) (*ctypes.ResultDvsRequest, error) {
-
 	hashAsBytes, err := hex.DecodeString(hash)
 	if err != nil {
 		return nil, err
@@ -102,13 +102,12 @@ func (env *Environment) QueryRequest(_ *rpctypes.Context, hash string) (*ctypes.
 	}, nil
 }
 
+// SearchRequest allows you to query for multiple DVS request results. It returns a
 func (env *Environment) SearchRequest(
 	ctx *rpctypes.Context,
 	query string,
-	prove bool,
 	pagePtr, perPagePtr *int,
 ) (*ctypes.ResultDvsRequestSearch, error) {
-
 	// if index is disabled, return error
 	if _, ok := env.DvsRequestIndexer.(*null.DvsRequestIndex); ok {
 		return nil, errors.New("dvs request indexing is disabled")

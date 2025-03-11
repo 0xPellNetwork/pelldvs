@@ -259,3 +259,16 @@ func (c *baseRPCClient) QueryRequest(ctx context.Context, hash string) (*ctypes.
 	}
 	return result, nil
 }
+
+func (c *baseRPCClient) SearchRequest(ctx context.Context, query string, pagePtr, perPagePtr *int) (*ctypes.ResultDvsRequestSearch, error) {
+	result := new(ctypes.ResultDvsRequestSearch)
+	_, err := c.caller.Call(ctx, "search_request", map[string]interface{}{
+		"query":    query,
+		"page":     pagePtr,
+		"per_page": perPagePtr,
+	}, result)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}

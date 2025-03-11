@@ -23,7 +23,7 @@ func (env *Environment) GetRoutes() RoutesMap {
 		"request_dvs":       rpc.NewRPCFunc(env.RequestDVS, "data,height,chainid,group_numbers,group_threshold_percentages"),
 		"request_dvs_async": rpc.NewRPCFunc(env.RequestDVSAsync, "data,height,chainid,group_numbers,group_threshold_percentages"),
 		"query_request":     rpc.NewRPCFunc(env.QueryRequest, "hash"),
-		"search_request":    rpc.NewRPCFunc(env.SearchRequest, "query,page,per_page,order_by"),
+		"search_request":    rpc.NewRPCFunc(env.SearchRequest, "query,page,per_page"),
 	}
 }
 

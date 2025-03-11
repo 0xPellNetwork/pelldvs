@@ -4,9 +4,6 @@ const (
 	// TMVersionDefault is the used as the fallback version of PellDVS
 	// when not using git describe. It is formatted with semantic versioning.
 	TMCoreSemVer = "0.2.2"
-	// ABCISemVer is the semantic version of the ABCI protocol
-	ABCISemVer  = "2.0.0"
-	ABCIVersion = ABCISemVer
 
 	AVSIVersion = "0.0.1"
 	// P2PProtocol versions all p2p behavior and msgs.

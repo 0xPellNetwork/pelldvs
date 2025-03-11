@@ -146,13 +146,13 @@ func addCommands() {
 
 var batchCmd = &cobra.Command{
 	Use:   "batch",
-	Short: "run a batch of abci commands against an application",
-	Long: `run a batch of abci commands against an application
+	Short: "run a batch of avsi commands against an application",
+	Long: `run a batch of avsi commands against an application
 
 This command is run by piping in a file containing a series of commands
 you'd like to run:
 
-    abci-cli batch < example.file
+    avsi-cli batch < example.file
 
 where example.file looks something like:
 
@@ -208,7 +208,7 @@ func persistentArgs(line []byte) []string {
 
 func muxOnCommands(cmd *cobra.Command, pArgs []string) error {
 	if len(pArgs) < 2 {
-		return errors.New("expecting persistent args of the form: abci-cli [command] <...>")
+		return errors.New("expecting persistent args of the form: avsi-cli [command] <...>")
 	}
 
 	// TODO: this parsing is fragile

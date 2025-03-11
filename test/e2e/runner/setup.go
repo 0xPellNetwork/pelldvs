@@ -121,19 +121,19 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 	cfg.P2P.AddrBookStrict = false
 	cfg.DBBackend = node.Database
 
-	switch node.ABCIProtocol {
+	switch node.AVSIProtocol {
 	case e2e.ProtocolUNIX:
 		cfg.ProxyApp = AppAddressUNIX
 	case e2e.ProtocolTCP:
 		cfg.ProxyApp = AppAddressTCP
 	case e2e.ProtocolGRPC:
 		cfg.ProxyApp = AppAddressTCP
-		cfg.ABCI = "grpc"
+		cfg.AVSI = "grpc"
 	case e2e.ProtocolBuiltin, e2e.ProtocolBuiltinConnSync:
 		cfg.ProxyApp = ""
-		cfg.ABCI = ""
+		cfg.AVSI = ""
 	default:
-		return nil, fmt.Errorf("unexpected ABCI protocol setting %q", node.ABCIProtocol)
+		return nil, fmt.Errorf("unexpected AVSI protocol setting %q", node.AVSIProtocol)
 	}
 
 	// PellDVS errors if it does not have a privval key set up, regardless of whether
@@ -196,7 +196,7 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 	return cfg, nil
 }
 
-// MakeAppConfig generates an ABCI application config for a node.
+// MakeAppConfig generates an AVSI application config for a node.
 func MakeAppConfig(node *e2e.Node) ([]byte, error) {
 	cfg := map[string]interface{}{
 		"chain_id":                      node.Testnet.Name,
@@ -216,7 +216,7 @@ func MakeAppConfig(node *e2e.Node) ([]byte, error) {
 		"vote_extensions_enable_height": node.Testnet.VoteExtensionsEnableHeight,
 		"vote_extensions_update_height": node.Testnet.VoteExtensionsUpdateHeight,
 	}
-	switch node.ABCIProtocol {
+	switch node.AVSIProtocol {
 	case e2e.ProtocolUNIX:
 		cfg["listen"] = AppAddressUNIX
 	case e2e.ProtocolTCP:
@@ -226,9 +226,9 @@ func MakeAppConfig(node *e2e.Node) ([]byte, error) {
 		cfg["protocol"] = "grpc"
 	case e2e.ProtocolBuiltin, e2e.ProtocolBuiltinConnSync:
 		delete(cfg, "listen")
-		cfg["protocol"] = string(node.ABCIProtocol)
+		cfg["protocol"] = string(node.AVSIProtocol)
 	default:
-		return nil, fmt.Errorf("unexpected ABCI protocol setting %q", node.ABCIProtocol)
+		return nil, fmt.Errorf("unexpected AVSI protocol setting %q", node.AVSIProtocol)
 	}
 	if node.Mode == e2e.ModeValidator {
 		switch node.PrivvalProtocol {

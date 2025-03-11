@@ -114,7 +114,7 @@ func (s *State) GetHash() []byte {
 }
 
 // Info returns both the height and hash simultaneously, and is used in the
-// ABCI Info call.
+// AVSI Info call.
 func (s *State) Info() (uint64, []byte) {
 	s.RLock()
 	defer s.RUnlock()
@@ -172,7 +172,7 @@ func (s *State) Set(key, value string) {
 	}
 }
 
-// Query is used in the ABCI Query call, and provides both the current height
+// Query is used in the AVSI Query call, and provides both the current height
 // and the value associated with the given key.
 func (s *State) Query(key string) (string, uint64) {
 	s.RLock()

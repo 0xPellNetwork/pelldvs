@@ -20,7 +20,7 @@ func main() {
 			// We need a proper example of evidence to broadcast
 			strings.HasPrefix(t.Name, "Info > /broadcast_evidence") ||
 			// We need a proper example of path and data
-			strings.HasPrefix(t.Name, "ABCI > /abci_query") ||
+			strings.HasPrefix(t.Name, "AVSI > /avsi_query") ||
 			// We need to find a way to make a transaction before starting the tests,
 			// that hash should replace the dummy one in the openapi file
 			strings.HasPrefix(t.Name, "Info > /tx") {

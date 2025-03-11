@@ -2,7 +2,7 @@ package types
 
 //-------------------------------------------------------
 
-// TM2PB is used for converting PellDVS ABCI to protobuf ABCI.
+// TM2PB is used for converting PellDVS AVSI to protobuf AVSI.
 // UNSTABLE
 // var TM2PB = tm2pb{}
 
@@ -87,7 +87,7 @@ package types
 
 //----------------------------------------------------------------------------
 
-// PB2TM is used for converting protobuf ABCI to PellDVS ABCI.
+// PB2TM is used for converting protobuf AVSI to PellDVS AVSI.
 // UNSTABLE
 // var PB2TM = pb2tm{}
 

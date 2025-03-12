@@ -115,6 +115,10 @@ linters-settings:
           - golang.org/x/crypto/curve25519
           - golang.org/x/crypto/hkdf
           - golang.org/x/crypto/nacl/box
+          - golang.org/x/crypto/nacl/secretbox
+          - google.golang.org/grpc/status
+          - golang.org/x/net/context
+          - olang.org/x/crypto/openpgp/armor
       test:
         files:
           - "$test"
@@ -151,6 +155,8 @@ linters-settings:
           - github.com/prometheus/client_golang/prometheus/testutil
           - github.com/stretchr/testify/assert
           - github.com/stretchr/testify/require
+          - golang.org/x/crypto/chacha20poly1305
+          - golang.org/x/crypto/bcrypt
   revive:
     enable-all-rules: true
     rules:

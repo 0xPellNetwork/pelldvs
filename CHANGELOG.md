@@ -4,6 +4,8 @@
 
 ### Features
 
+(feat) [#10](https://github.com/0xPellNetwork/pelldvs/pull/10) feat(rpc): allow querying by dvs.height 
+
 ### Improvements
 
 (CI) [#7](https://github.com/0xPellNetwork/pelldvs/pull/7) ci: add changelog check in CI  

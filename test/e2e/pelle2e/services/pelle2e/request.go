@@ -73,3 +73,12 @@ func (per *PellDVSE2ERunner) QueryRequest(ctx context.Context, hash string) (*ct
 	result, err := httpClient.QueryRequest(ctx, hash)
 	return result, err
 }
+
+func (per *PellDVSE2ERunner) SearchRequest(ctx context.Context, query string, pagePtr, perPagePtr *int) (*ctypes.ResultDvsRequestSearch, error) {
+	httpClient, err := http.New(per.DVSNodeRPCURL, "")
+	if err != nil {
+		return nil, err
+	}
+	result, err := httpClient.SearchRequest(ctx, query, pagePtr, perPagePtr)
+	return result, err
+}

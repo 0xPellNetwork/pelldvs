@@ -279,7 +279,11 @@ func createDvsRequestIndexer(
 		if err != nil {
 			return nil, err
 		}
-		return kv.NewDvsRequestIndex(store), nil
+
+		indexer := kv.NewDvsRequestIndex(store)
+		indexer.SetLogger(logger.With("module", "DvsRequestIndexer"))
+
+		return indexer, nil
 
 	case "psql":
 

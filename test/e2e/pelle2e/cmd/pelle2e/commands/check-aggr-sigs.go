@@ -152,6 +152,24 @@ func _checkBLSAggrSig(cmd *cobra.Command) error {
 		"taskResult", taskResult,
 	)
 
+	// test for search request result
+	request, err := per.SearchRequest(ctx, "SecondEventType.SecondEventKey='SecondEventValue'", nil, nil)
+	if err != nil {
+		logger.Error("SearchRequest failed",
+			"query", "SecondEventType.SecondEventKey='SecondEventValue'",
+			"error", err)
+		return err
+	}
+
+	if request == nil {
+		logger.Error("SearchRequest returned no results",
+			"query", "SecondEventType.SecondEventKey='SecondEventValue'")
+		return fmt.Errorf("search request returned no results")
+	} else {
+		logger.Info("SearchRequest successful",
+			"query", "SecondEventType.SecondEventKey='SecondEventValue'",
+			"results", request)
+	}
 	fmt.Println()
 	fmt.Println()
 

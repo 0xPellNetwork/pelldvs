@@ -12,6 +12,8 @@
 
 ### Bug Fixes
 
+(dvs) [#6](https://github.com/0xPellNetwork/pelldvs/pull/6) fix: verify DVS request response digest length is 32 
+
 ## v0.2.2
 
 v0.2.2 includes a version release CI script fix.  

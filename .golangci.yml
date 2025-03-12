@@ -107,6 +107,14 @@ linters-settings:
           - github.com/prometheus/common/expfmt
           - github.com/stretchr/testify/assert
           - github.com/stretchr/testify/require
+          - golang.org/x/net/netutil
+          - google.golang.org/grpc
+          - google.golang.org/grpc/credentials/insecure
+          - google.golang.org/grpc/codes
+          - golang.org/x/crypto/chacha20poly1305
+          - golang.org/x/crypto/curve25519
+          - golang.org/x/crypto/hkdf
+          - golang.org/x/crypto/nacl/box
       test:
         files:
           - "$test"

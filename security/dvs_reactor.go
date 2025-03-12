@@ -21,6 +21,10 @@ import (
 	"github.com/0xPellNetwork/pelldvs/types"
 )
 
+const (
+	responseDigestLenLimit = 32
+)
+
 type DVSReactor struct {
 	config            config.PellConfig
 	ProxyApp          proxy.AppConns
@@ -29,6 +33,7 @@ type DVSReactor struct {
 	aggregator        aggtypes.Aggregator
 	dvsRequestIndexer requestindex.DvsRequestIndexer
 	dvsReader         reader.DVSReader
+	privValidator     types.PrivValidator
 }
 
 func CreateDVSReactor(
@@ -39,6 +44,7 @@ func CreateDVSReactor(
 	dvsRequestIndexer requestindex.DvsRequestIndexer,
 	db dbm.DB,
 	logger log.Logger,
+	privValidator types.PrivValidator,
 ) (DVSReactor, error) {
 	dvsReqStore, err := NewStore(storeDir)
 	if err != nil {
@@ -63,13 +69,10 @@ func CreateDVSReactor(
 		aggregator:        aggregator,
 		dvsRequestIndexer: dvsRequestIndexer,
 		dvsReader:         dvsReader,
+		privValidator:     privValidator,
 	}
 
 	return dvs, nil
-}
-
-func (dvs *DVSReactor) SignMessage(message []byte) (*bls.Signature, error) {
-	return dvs.dvsState.privValidator.SignMessage(message)
 }
 
 func (dvs *DVSReactor) OnQuery(key []byte) ([]byte, []byte, error) {
@@ -148,9 +151,13 @@ func (dvs *DVSReactor) OnRequest(request avsitypes.DVSRequest) (*avsitypes.DVSRe
 		Request:  &request,
 		Operator: operators,
 	})
-
 	if err != nil {
 		return nil, err
+	}
+
+	// Check if responseDigest length is equal to 32
+	if len(responseProcessDVSRequest.ResponseDigest) != responseDigestLenLimit {
+		return nil, fmt.Errorf("responseDigest length %d is not equal to %d", responseProcessDVSRequest.ResponseDigest, responseDigestLenLimit)
 	}
 
 	reqResIdx := avsitypes.DVSRequestResult{
@@ -163,19 +170,16 @@ func (dvs *DVSReactor) OnRequest(request avsitypes.DVSRequest) (*avsitypes.DVSRe
 		return nil, err
 	}
 
-	signature, err := dvs.SignMessage(responseProcessDVSRequest.ResponseDigest)
+	signature, err := dvs.privValidator.SignBytes(responseProcessDVSRequest.ResponseDigest)
 	if err != nil {
 		dvs.logger.Error("SignMessage failed", "error", err)
 		return nil, err
 	}
 	dvs.logger.Debug("responseWithSignature", "signature", signature)
 
-	var digestArr [32]byte
-	copy(digestArr[:], responseProcessDVSRequest.ResponseDigest)
 	g1p := bls.G1Point{
 		G1Affine: signature.G1Affine,
 	}
-
 	sig := bls.Signature{G1Point: &g1p}
 
 	responseWithSingature := aggtypes.ResponseWithSignature{
@@ -183,7 +187,7 @@ func (dvs *DVSReactor) OnRequest(request avsitypes.DVSRequest) (*avsitypes.DVSRe
 		Signature:   &sig,
 		OperatorID:  dvs.dvsState.operatorID,
 		RequestData: request,
-		Digest:      digestArr,
+		Digest:      [32]byte(responseProcessDVSRequest.ResponseDigest),
 	}
 
 	// Create a channel to receive validated response

@@ -17,10 +17,10 @@ const (
 
 //go:generate ../../scripts/mockery_generate.sh Client
 
-// Client defines the interface for an ABCI client.
+// Client defines the interface for an AVSI client.
 //
-// NOTE these are client errors, eg. ABCI socket connectivity issues.
-// Application-related errors are reflected in response via ABCI error codes
+// NOTE these are client errors, eg. AVSI socket connectivity issues.
+// Application-related errors are reflected in response via AVSI error codes
 // and (potentially) error response.
 type Client interface {
 	service.Service
@@ -35,7 +35,7 @@ type Client interface {
 
 //----------------------------------------
 
-// NewClient returns a new ABCI client of the specified transport type.
+// NewClient returns a new AVSI client of the specified transport type.
 // It returns an error if the transport is not "socket" or "grpc"
 func NewClient(addr, transport string, mustConnect bool) (client Client, err error) {
 	switch transport {
@@ -45,7 +45,7 @@ func NewClient(addr, transport string, mustConnect bool) (client Client, err err
 		client = NewGRPCClient(addr, mustConnect)
 
 	default:
-		err = fmt.Errorf("unknown abci transport %s", transport)
+		err = fmt.Errorf("unknown avsi transport %s", transport)
 	}
 	return
 }

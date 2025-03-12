@@ -114,8 +114,8 @@ version = "{{ .BaseConfig.Version }}"
 ###                   Main Base Config Options                      ###
 #######################################################################
 
-# TCP or UNIX socket address of the ABCI application,
-# or the name of an ABCI application compiled in with the PellDVS binary
+# TCP or UNIX socket address of the AVSI application,
+# or the name of an AVSI application compiled in with the PellDVS binary
 proxy_app = "{{ .BaseConfig.ProxyApp }}"
 
 # A custom human readable name for this node
@@ -169,10 +169,10 @@ priv_validator_laddr = "{{ .BaseConfig.PrivValidatorListenAddr }}"
 # Path to the JSON file containing the private key to use for node authentication in the p2p protocol
 node_key_file = "{{ js .BaseConfig.NodeKey }}"
 
-# Mechanism to connect to the ABCI application: socket | grpc
-abci = "{{ .BaseConfig.ABCI }}"
+# Mechanism to connect to the AVSI application: socket | grpc
+abci = "{{ .BaseConfig.AVSI }}"
 
-# If true, query the ABCI app on connecting to a new peer
+# If true, query the AVSI app on connecting to a new peer
 # so the app can decide if we should keep the connection or not
 filter_peers = {{ .BaseConfig.FilterPeers }}
 

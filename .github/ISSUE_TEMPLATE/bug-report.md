@@ -23,7 +23,7 @@ ask you to provide additional logs and data (PellDVS & App).
 
 **Have you tried the latest version**: yes/no
 
-**ABCI app** (name for built-in, URL for self-written if it's publicly available):
+**AVSI app** (name for built-in, URL for self-written if it's publicly available):
 
 **Environment**:
 - **OS** (e.g. from /etc/os-release):

@@ -76,11 +76,8 @@ type BatchHTTP struct {
 // non-batch) must conform. Acts as an additional code-level sanity check to
 // make sure the implementations stay coherent.
 type rpcClient interface {
-	//rpcclient.ABCIClient
 	rpcclient.HistoryClient
 	rpcclient.NetworkClient
-	// rpcclient.SignClient
-	//rpcclient.StatusClient
 }
 
 // baseRPCClient implements the basic RPC method logic without the actual

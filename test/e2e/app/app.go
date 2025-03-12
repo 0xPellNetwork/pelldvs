@@ -25,7 +25,7 @@ const (
 	suffixInitialHeight string = "InitialHeight"
 )
 
-// Application is an ABCI application for use by end-to-end tests. It is a
+// Application is an AVSI application for use by end-to-end tests. It is a
 // simple key/value store for strings, storing data in memory and persisting
 // to disk as JSON, taking state sync snapshots if requested.
 type Application struct {
@@ -61,7 +61,7 @@ type Config struct {
 	PersistInterval uint64 `toml:"persist_interval"`
 
 	// ValidatorUpdates is a map of heights to validator names and their power,
-	// and will be returned by the ABCI application. For example, the following
+	// and will be returned by the AVSI application. For example, the following
 	// changes the power of validator01 and validator02 at height 1000:
 	//
 	// [validator_update.1000]
@@ -76,7 +76,7 @@ type Config struct {
 	// height <-> pubkey <-> voting power
 	ValidatorUpdates map[string]map[string]uint8 `toml:"validator_update"`
 
-	// Add artificial delays to each of the main ABCI calls to mimic computation time
+	// Add artificial delays to each of the main AVSI calls to mimic computation time
 	// of the application
 	PrepareProposalDelay time.Duration `toml:"prepare_proposal_delay"`
 	ProcessProposalDelay time.Duration `toml:"process_proposal_delay"`
@@ -117,18 +117,18 @@ func NewApplication(cfg *Config) (*Application, error) {
 	}, nil
 }
 
-// Info implements ABCI.
+// Info implements AVSI.
 func (app *Application) Info(context.Context, *avsi.RequestInfo) (*avsi.ResponseInfo, error) {
 	height, hash := app.state.Info()
 	return &avsi.ResponseInfo{
-		Version:          version.ABCIVersion,
+		Version:          version.AVSIVersion,
 		AppVersion:       appVersion,
 		LastBlockHeight:  int64(height),
 		LastBlockAppHash: hash,
 	}, nil
 }
 
-// Query implements ABCI.
+// Query implements AVSI.
 func (app *Application) Query(_ context.Context, req *avsi.RequestQuery) (*avsi.ResponseQuery, error) {
 	value, height := app.state.Query(string(req.Data))
 	return &avsi.ResponseQuery{

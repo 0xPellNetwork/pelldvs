@@ -13,7 +13,7 @@ import (
 
 	"github.com/0xPellNetwork/pelldvs-libs/log"
 	"github.com/0xPellNetwork/pelldvs/config"
-	"github.com/0xPellNetwork/pelldvs/crypto/ed25519"
+	"github.com/0xPellNetwork/pelldvs/crypto/bls"
 	"github.com/0xPellNetwork/pelldvs/p2p"
 	"github.com/0xPellNetwork/pelldvs/privval"
 	e2e "github.com/0xPellNetwork/pelldvs/test/e2e/pkg"
@@ -88,17 +88,15 @@ func Setup(testnet *e2e.Testnet, infp infra.Provider) error {
 			return err
 		}
 
-		(privval.NewFilePV(node.PrivvalKey,
-			filepath.Join(nodeDir, PrivvalKeyFile),
-			filepath.Join(nodeDir, PrivvalStateFile),
-		)).Save()
+		blsKeys, err := bls.GenRandomBlsKeys()
+		if err != nil {
+		}
+
+		(privval.NewFilePV(*blsKeys, filepath.Join(nodeDir, PrivvalKeyFile)).Save())
 
 		// Set up a dummy validator. PellDVS requires a file PV even when not used, so we
 		// give it a dummy such that it will fail if it actually tries to use it.
-		(privval.NewFilePV(ed25519.GenPrivKey(),
-			filepath.Join(nodeDir, PrivvalDummyKeyFile),
-			filepath.Join(nodeDir, PrivvalDummyStateFile),
-		)).Save()
+		(privval.NewFilePV(*blsKeys, filepath.Join(nodeDir, PrivvalDummyKeyFile)).Save())
 	}
 
 	if testnet.Prometheus {
@@ -121,19 +119,19 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 	cfg.P2P.AddrBookStrict = false
 	cfg.DBBackend = node.Database
 
-	switch node.ABCIProtocol {
+	switch node.AVSIProtocol {
 	case e2e.ProtocolUNIX:
 		cfg.ProxyApp = AppAddressUNIX
 	case e2e.ProtocolTCP:
 		cfg.ProxyApp = AppAddressTCP
 	case e2e.ProtocolGRPC:
 		cfg.ProxyApp = AppAddressTCP
-		cfg.ABCI = "grpc"
+		cfg.AVSI = "grpc"
 	case e2e.ProtocolBuiltin, e2e.ProtocolBuiltinConnSync:
 		cfg.ProxyApp = ""
-		cfg.ABCI = ""
+		cfg.AVSI = ""
 	default:
-		return nil, fmt.Errorf("unexpected ABCI protocol setting %q", node.ABCIProtocol)
+		return nil, fmt.Errorf("unexpected AVSI protocol setting %q", node.AVSIProtocol)
 	}
 
 	// PellDVS errors if it does not have a privval key set up, regardless of whether
@@ -196,7 +194,7 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 	return cfg, nil
 }
 
-// MakeAppConfig generates an ABCI application config for a node.
+// MakeAppConfig generates an AVSI application config for a node.
 func MakeAppConfig(node *e2e.Node) ([]byte, error) {
 	cfg := map[string]interface{}{
 		"chain_id":                      node.Testnet.Name,
@@ -216,7 +214,7 @@ func MakeAppConfig(node *e2e.Node) ([]byte, error) {
 		"vote_extensions_enable_height": node.Testnet.VoteExtensionsEnableHeight,
 		"vote_extensions_update_height": node.Testnet.VoteExtensionsUpdateHeight,
 	}
-	switch node.ABCIProtocol {
+	switch node.AVSIProtocol {
 	case e2e.ProtocolUNIX:
 		cfg["listen"] = AppAddressUNIX
 	case e2e.ProtocolTCP:
@@ -226,9 +224,9 @@ func MakeAppConfig(node *e2e.Node) ([]byte, error) {
 		cfg["protocol"] = "grpc"
 	case e2e.ProtocolBuiltin, e2e.ProtocolBuiltinConnSync:
 		delete(cfg, "listen")
-		cfg["protocol"] = string(node.ABCIProtocol)
+		cfg["protocol"] = string(node.AVSIProtocol)
 	default:
-		return nil, fmt.Errorf("unexpected ABCI protocol setting %q", node.ABCIProtocol)
+		return nil, fmt.Errorf("unexpected AVSI protocol setting %q", node.AVSIProtocol)
 	}
 	if node.Mode == e2e.ModeValidator {
 		switch node.PrivvalProtocol {

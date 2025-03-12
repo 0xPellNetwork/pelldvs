@@ -1,40 +1,18 @@
 package types
 
 import (
-	"bytes"
 	"errors"
 
 	"github.com/0xPellNetwork/pelldvs/crypto"
+	"github.com/0xPellNetwork/pelldvs/crypto/bls"
 	"github.com/0xPellNetwork/pelldvs/crypto/ed25519"
 )
 
 // PrivValidator defines the functionality of a local PellDVS validator
 // that signs votes and proposals, and never double signs.
 type PrivValidator interface {
-	GetPubKey() (crypto.PubKey, error)
-}
-
-type PrivValidatorsByAddress []PrivValidator
-
-func (pvs PrivValidatorsByAddress) Len() int {
-	return len(pvs)
-}
-
-func (pvs PrivValidatorsByAddress) Less(i, j int) bool {
-	pvi, err := pvs[i].GetPubKey()
-	if err != nil {
-		panic(err)
-	}
-	pvj, err := pvs[j].GetPubKey()
-	if err != nil {
-		panic(err)
-	}
-
-	return bytes.Compare(pvi.Address(), pvj.Address()) == -1
-}
-
-func (pvs PrivValidatorsByAddress) Swap(i, j int) {
-	pvs[i], pvs[j] = pvs[j], pvs[i]
+	GetPubKey() (*bls.G1Point, error)
+	SignBytes(bytes []byte) (*bls.Signature, error)
 }
 
 //----------------------------------------

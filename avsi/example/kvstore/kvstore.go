@@ -130,9 +130,12 @@ func (app *Application) ProcessDVSRequest(_ context.Context, req *types.RequestP
 		},
 	))
 
+	var digestArr [32]byte
+	copy(digestArr[:], value)
+
 	return &types.ResponseProcessDVSRequest{
 		Response:       []byte(key),
-		ResponseDigest: []byte(value),
+		ResponseDigest: digestArr[:],
 		Events:         events,
 	}, nil
 }

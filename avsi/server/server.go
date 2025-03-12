@@ -1,5 +1,5 @@
 /*
-Package server is used to start a new ABCI server.
+Package server is used to start a new AVSI server.
 
 It contains two server implementation:
   - gRPC server

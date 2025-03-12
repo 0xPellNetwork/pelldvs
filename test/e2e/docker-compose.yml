@@ -72,7 +72,7 @@ services:
         condition: service_started
     entrypoint: [ "bash", "/root/scripts/init_emulator.sh" ]
     ports:
-      - "${EMULATOR_HOST_PORT:-9092}:9090"
+      - "${EMULATOR_HOST_PORT:-9090}:9090"
     volumes:
       - ./docker/pelldvs/scripts:/root/scripts
     healthcheck:

@@ -14,6 +14,10 @@ jobs:
     env:
       GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
       TAG: ${{ github.event.pull_request.head.sha || github.workflow_sha }}
+      OPERATOR_HOST_PORT: ${{ vars.OPERATOR_HOST_PORT }}
+      AGGREGATOR_HOST_PORT: ${{ vars.AGGREGATOR_HOST_PORT }}
+      EMULATOR_HOST_PORT: ${{ vars.EMULATOR_HOST_PORT }}
+      ETH_HOST_PORT: ${{ vars.ETH_HOST_PORT }}
     steps:
       - uses: actions/checkout@v4
       - name: Stop services first

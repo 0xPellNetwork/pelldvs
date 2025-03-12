@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"testing"
@@ -49,13 +50,16 @@ func TestKV(t *testing.T) {
 	key := "key123"
 	value := "value456"
 
+	var digestArr [32]byte
+	copy(digestArr[:], value)
+
 	taskRes, err := taskProxy.ProcessDVSRequest(context.Background(), &types.RequestProcessDVSRequest{Request: &types.DVSRequest{Data: []byte(key + "=" + value)}})
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	require.Equal(t, key, string(taskRes.Response))
-	require.Equal(t, value, string(taskRes.ResponseDigest))
+	require.True(t, bytes.Equal(digestArr[:], taskRes.ResponseDigest))
 
 	queryProxy := NewAppConnQuery(cli, NopMetrics())
 	queryRes, err := queryProxy.Query(context.Background(), &types.RequestQuery{

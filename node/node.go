@@ -137,10 +137,10 @@ func NewNodeWithContext(ctx context.Context,
 ) (*Node, error) {
 
 	// TODO: add service id from config
-	p2pMetrics, abciMetrics := metricsProvider("id")
+	p2pMetrics, avsiMetrics := metricsProvider("id")
 
-	// Create the proxyApp and establish connections to the ABCI app (consensus, mempool, query).
-	proxyApp, err := createAndStartProxyAppConns(clientCreator, logger, abciMetrics)
+	// Create the proxyApp and establish connections to the AVSI app (consensus, mempool, query).
+	proxyApp, err := createAndStartProxyAppConns(clientCreator, logger, avsiMetrics)
 	if err != nil {
 		return nil, err
 	}
@@ -554,7 +554,7 @@ func (n *Node) PrivValidator() types.PrivValidator {
 	return n.privValidator
 }
 
-// ProxyApp returns the Node's AppConns, representing its connections to the ABCI application.
+// ProxyApp returns the Node's AppConns, representing its connections to the AVSI application.
 func (n *Node) ProxyApp() proxy.AppConns {
 	return n.proxyApp
 }

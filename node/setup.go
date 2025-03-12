@@ -45,7 +45,7 @@ func DefaultNewNode(config *cfg.Config, logger log.Logger) (*Node, error) {
 	return NewNode(config,
 		privval.LoadOrGenFilePV(config.Pell.OperatorBLSPrivateKeyStorePath),
 		nodeKey,
-		proxy.DefaultClientCreator(config.ProxyApp, config.ABCI, config.DBDir()),
+		proxy.DefaultClientCreator(config.ProxyApp, config.AVSI, config.DBDir()),
 		cfg.DefaultDBProvider,
 		aggregator,
 		DefaultMetricsProvider(config.Instrumentation),
@@ -98,12 +98,12 @@ func createTransport(
 		connFilters = append(connFilters, p2p.ConnDuplicateIPFilter())
 	}
 
-	// Filter peers by addr or pubkey with an ABCI query.
+	// Filter peers by addr or pubkey with an AVSI query.
 	// If the query return code is OK, add peer.
 	if config.FilterPeers {
 		connFilters = append(
 			connFilters,
-			// ABCI query for address filtering.
+			// AVSI query for address filtering.
 			func(_ p2p.ConnSet, c net.Conn, _ []net.IP) error {
 				res, err := proxyApp.Query().Query(context.TODO(), &avsi.RequestQuery{
 					Path: fmt.Sprintf("/p2p/filter/addr/%s", c.RemoteAddr().String()),
@@ -121,7 +121,7 @@ func createTransport(
 
 		peerFilters = append(
 			peerFilters,
-			// ABCI query for ID filtering.
+			// AVSI query for ID filtering.
 			func(_ p2p.IPeerSet, p p2p.Peer) error {
 				res, err := proxyApp.Query().Query(context.TODO(), &avsi.RequestQuery{
 					Path: fmt.Sprintf("/p2p/filter/id/%s", p.ID()),

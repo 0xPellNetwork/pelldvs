@@ -80,7 +80,7 @@ type Testnet struct {
 	LoadTxBatchSize                                      int
 	LoadTxConnections                                    int
 	LoadMaxTxs                                           int
-	ABCIProtocol                                         string
+	AVSIProtocol                                         string
 	PrepareProposalDelay                                 time.Duration
 	ProcessProposalDelay                                 time.Duration
 	CheckTxDelay                                         time.Duration
@@ -112,7 +112,7 @@ type Node struct {
 	BlockSyncVersion    string
 	StateSync           bool
 	Database            string
-	ABCIProtocol        Protocol
+	AVSIProtocol        Protocol
 	PrivvalProtocol     Protocol
 	PersistInterval     uint64
 	SnapshotInterval    uint64
@@ -164,7 +164,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		LoadTxBatchSize:            manifest.LoadTxBatchSize,
 		LoadTxConnections:          manifest.LoadTxConnections,
 		LoadMaxTxs:                 manifest.LoadMaxTxs,
-		ABCIProtocol:               manifest.ABCIProtocol,
+		AVSIProtocol:               manifest.AVSIProtocol,
 		PrepareProposalDelay:       manifest.PrepareProposalDelay,
 		ProcessProposalDelay:       manifest.ProcessProposalDelay,
 		CheckTxDelay:               manifest.CheckTxDelay,
@@ -186,8 +186,8 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	if manifest.InitialHeight > 0 {
 		testnet.InitialHeight = manifest.InitialHeight
 	}
-	if testnet.ABCIProtocol == "" {
-		testnet.ABCIProtocol = string(ProtocolBuiltin)
+	if testnet.AVSIProtocol == "" {
+		testnet.AVSIProtocol = string(ProtocolBuiltin)
 	}
 	if testnet.UpgradeVersion == "" {
 		testnet.UpgradeVersion = localVersion
@@ -228,7 +228,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 			ProxyPort:        ind.Port,
 			Mode:             ModeValidator,
 			Database:         "goleveldb",
-			ABCIProtocol:     Protocol(testnet.ABCIProtocol),
+			AVSIProtocol:     Protocol(testnet.AVSIProtocol),
 			PrivvalProtocol:  ProtocolFile,
 			StartAt:          nodeManifest.StartAt,
 			BlockSyncVersion: nodeManifest.BlockSyncVersion,
@@ -250,7 +250,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 			node.Mode = Mode(nodeManifest.Mode)
 		}
 		if node.Mode == ModeLight {
-			node.ABCIProtocol = ProtocolBuiltin
+			node.AVSIProtocol = ProtocolBuiltin
 		}
 		if nodeManifest.Database != "" {
 			node.Database = nodeManifest.Database
@@ -430,12 +430,12 @@ func (n Node) Validate(testnet Testnet) error {
 	default:
 		return fmt.Errorf("invalid database setting %q", n.Database)
 	}
-	switch n.ABCIProtocol {
+	switch n.AVSIProtocol {
 	case ProtocolBuiltin, ProtocolBuiltinConnSync, ProtocolUNIX, ProtocolTCP, ProtocolGRPC:
 	default:
-		return fmt.Errorf("invalid ABCI protocol setting %q", n.ABCIProtocol)
+		return fmt.Errorf("invalid AVSI protocol setting %q", n.AVSIProtocol)
 	}
-	if n.Mode == ModeLight && n.ABCIProtocol != ProtocolBuiltin && n.ABCIProtocol != ProtocolBuiltinConnSync {
+	if n.Mode == ModeLight && n.AVSIProtocol != ProtocolBuiltin && n.AVSIProtocol != ProtocolBuiltinConnSync {
 		return errors.New("light client must use builtin protocol")
 	}
 	switch n.PrivvalProtocol {

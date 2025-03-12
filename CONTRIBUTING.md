@@ -264,7 +264,7 @@ latest `main`. (Since pull requests are squash-merged, either is fine!)
 
 Update the `UPGRADING.md` if the change you've made is breaking and the
 instructions should be in place for a user on how he/she can upgrade its
-software (ABCI application, PellDVS blockchain, light client, wallet).
+software (AVSI application, PellDVS blockchain, light client, wallet).
 
 Sometimes (often!) pull requests get out-of-date with `main`, as other people
 merge different pull requests to `main`. It is our convention that pull request

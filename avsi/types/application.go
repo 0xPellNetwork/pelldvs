@@ -5,7 +5,7 @@ import (
 )
 
 // Application is an interface that enables any finite, deterministic state machine
-// to be driven by a blockchain-based replication engine via the ABCI.
+// to be driven by a blockchain-based replication engine via the AVSI.
 type Application interface {
 	// Info/Query Connection
 	Info(context.Context, *RequestInfo) (*ResponseInfo, error)    // Return application info

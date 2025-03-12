@@ -37,13 +37,13 @@ func AddNodeFlags(cmd *cobra.Command) {
 		"genesis_hash",
 		[]byte{},
 		"optional SHA-256 hash of the genesis file")
-	// abci flags
+	// avsi flags
 	cmd.Flags().String(
 		"proxy_app",
 		config.ProxyApp,
 		"proxy app address, or one of: 'kvstore',"+
 			" 'persistent_kvstore' or 'noop' for local testing.")
-	cmd.Flags().String("abci", config.ABCI, "specify abci transport (socket | grpc)")
+	cmd.Flags().String("avsi", config.AVSI, "specify avsi transport (socket | grpc)")
 
 	// rpc flags
 	cmd.Flags().String("rpc.laddr", config.RPC.ListenAddress, "RPC listen address. Port required")
@@ -80,7 +80,7 @@ func AddNodeFlags(cmd *cobra.Command) {
 }
 
 // NewRunNodeCmd returns the command that allows the CLI to start a node.
-// It can be used with a custom PrivValidator and in-process ABCI application.
+// It can be used with a custom PrivValidator and in-process AVSI application.
 func NewRunNodeCmd(nodeProvider nm.Provider) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "start",

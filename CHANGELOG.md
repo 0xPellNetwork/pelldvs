@@ -10,6 +10,8 @@
 
 (CI) [#11](https://github.com/0xPellNetwork/pelldvs/pull/11) ci: retrieve E2E port config from GitHub variables  
 
+(refactor) [#9](https://github.com/0xPellNetwork/pelldvs/pull/9) refactor: rename abci to avsi  
+
 ### Bug Fixes
 
 (dvs) [#6](https://github.com/0xPellNetwork/pelldvs/pull/6) fix: verify DVS request response digest length is 32 

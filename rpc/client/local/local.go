@@ -18,7 +18,7 @@ This implementation is useful for:
 
 * Running tests against a node in-process without the overhead
 of going through an http server
-* Communication between an ABCI app and PellDVS when they
+* Communication between an AVSI app and PellDVS when they
 are compiled in process.
 
 For real clients, you probably want to use client.HTTP.  For more

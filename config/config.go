@@ -153,8 +153,8 @@ type BaseConfig struct { //nolint: maligned
 	// This should be set in viper so it can unmarshal into this struct
 	RootDir string `mapstructure:"home"`
 
-	// TCP or UNIX socket address of the ABCI application,
-	// or the name of an ABCI application compiled in with the PellDVS binary
+	// TCP or UNIX socket address of the AVSI application,
+	// or the name of an AVSI application compiled in with the PellDVS binary
 	ProxyApp string `mapstructure:"proxy_app"`
 
 	// A custom human readable name for this node
@@ -187,10 +187,10 @@ type BaseConfig struct { //nolint: maligned
 	// A JSON file containing the private key to use for p2p authenticated encryption
 	NodeKey string `mapstructure:"node_key_file"`
 
-	// Mechanism to connect to the ABCI application: socket | grpc
-	ABCI string `mapstructure:"abci"`
+	// Mechanism to connect to the AVSI application: socket | grpc
+	AVSI string `mapstructure:"avsi"`
 
-	// If true, query the ABCI app on connecting to a new peer
+	// If true, query the AVSI app on connecting to a new peer
 	// so the app can decide if we should keep the connection or not
 	FilterPeers bool `mapstructure:"filter_peers"` // false
 }
@@ -205,7 +205,7 @@ func DefaultBaseConfig() BaseConfig {
 		NodeKey:            defaultNodeKeyPath,
 		Moniker:            defaultMoniker,
 		ProxyApp:           "tcp://127.0.0.1:26658",
-		ABCI:               "socket",
+		AVSI:               "socket",
 		LogLevel:           DefaultLogLevel,
 		LogFormat:          LogFormatPlain,
 		FilterPeers:        false,

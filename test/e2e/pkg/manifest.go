@@ -32,7 +32,7 @@ type Manifest struct {
 	Validators *map[string]int64 `toml:"validators"`
 
 	// ValidatorUpdates is a map of heights to validator names and their power,
-	// and will be returned by the ABCI application. For example, the following
+	// and will be returned by the AVSI application. For example, the following
 	// changes the power of validator01 and validator02 at height 1000:
 	//
 	// [validator_update.1000]
@@ -56,7 +56,7 @@ type Manifest struct {
 	// testnet via the RPC endpoint of a random node. Default is 0
 	Evidence int `toml:"evidence"`
 
-	// ABCIProtocol specifies the protocol used to communicate with the ABCI
+	// AVSIProtocol specifies the protocol used to communicate with the AVSI
 	// application: "unix", "tcp", "grpc", "builtin" or "builtin_connsync".
 	//
 	// Defaults to "builtin". "builtin" will build a complete PellDVS node
@@ -66,9 +66,9 @@ type Manifest struct {
 	// "builtin_connsync" is basically the same as "builtin", except that it
 	// uses a "connection-synchronized" local client creator, which attempts to
 	// replicate the same concurrency model locally as the socket client.
-	ABCIProtocol string `toml:"abci_protocol"`
+	AVSIProtocol string `toml:"abci_protocol"`
 
-	// Add artificial delays to each of the main ABCI calls to mimic computation time
+	// Add artificial delays to each of the main AVSI calls to mimic computation time
 	// of the application
 	PrepareProposalDelay time.Duration `toml:"prepare_proposal_delay"`
 	ProcessProposalDelay time.Duration `toml:"process_proposal_delay"`
@@ -142,7 +142,7 @@ type ManifestNode struct {
 	Database string `toml:"database"`
 
 	// PrivvalProtocol specifies the protocol used to sign consensus messages:
-	// "file", "unix", or "tcp". Defaults to "file". For unix and tcp, the ABCI
+	// "file", "unix", or "tcp". Defaults to "file". For unix and tcp, the AVSI
 	// application will launch a remote signer client in a separate goroutine.
 	// Only nodes with mode=validator will actually make use of this.
 	PrivvalProtocol string `toml:"privval_protocol"`

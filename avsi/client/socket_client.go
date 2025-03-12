@@ -24,7 +24,7 @@ const (
 
 // socketClient is the client side implementation of the Tendermint
 // Socket Protocol (TSP). It is used by an instance of Tendermint to pass
-// ABCI requests to an out of process application running the socketServer.
+// AVSI requests to an out of process application running the socketServer.
 //
 // This is goroutine-safe. All calls are serialized to the server through an unbuffered queue. The socketClient
 // tracks responses and expects them to respect the order of the requests sent.
@@ -77,7 +77,7 @@ func (cli *socketClient) OnStart() error {
 			if cli.mustConnect {
 				return err
 			}
-			cli.Logger.Error(fmt.Sprintf("abci.socketClient failed to connect to %v.  Retrying after %vs...",
+			cli.Logger.Error(fmt.Sprintf("avsi.socketClient failed to connect to %v.  Retrying after %vs...",
 				cli.addr, dialRetryIntervalSeconds), "err", err)
 			time.Sleep(time.Second * dialRetryIntervalSeconds)
 			continue
@@ -344,9 +344,9 @@ func (cli *socketClient) stopForError(err error) {
 	}
 	cli.mtx.Unlock()
 
-	cli.Logger.Error(fmt.Sprintf("Stopping abci.socketClient for error: %v", err.Error()))
+	cli.Logger.Error(fmt.Sprintf("Stopping avsi.socketClient for error: %v", err.Error()))
 	if err := cli.Stop(); err != nil {
-		cli.Logger.Error("Error stopping abci.socketClient", "err", err)
+		cli.Logger.Error("Error stopping avsi.socketClient", "err", err)
 	}
 }
 

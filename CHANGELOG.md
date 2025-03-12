@@ -8,7 +8,7 @@
 
 (CI) [#7](https://github.com/0xPellNetwork/pelldvs/pull/7) ci: add changelog check in CI  
 
-(chore) [#11](https://github.com/0xPellNetwork/pelldvs/pull/11) chore: change emulator default port for e2e test
+(CI) [#11](https://github.com/0xPellNetwork/pelldvs/pull/11) ci: retrieve E2E port config from GitHub variables  
 
 ### Bug Fixes
 

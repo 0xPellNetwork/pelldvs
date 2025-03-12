@@ -119,6 +119,7 @@ linters-settings:
           - google.golang.org/grpc/status
           - golang.org/x/net/context
           - olang.org/x/crypto/openpgp/armor
+          - golang.org/x/crypto/openpgp/armo
       test:
         files:
           - "$test"

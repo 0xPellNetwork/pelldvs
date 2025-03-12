@@ -8,6 +8,8 @@
 
 (CI) [#7](https://github.com/0xPellNetwork/pelldvs/pull/7) ci: add changelog check in CI  
 
+(CI) [#11](https://github.com/0xPellNetwork/pelldvs/pull/11) ci: retrieve E2E port config from GitHub variables  
+
 ### Bug Fixes
 
 ## v0.2.2

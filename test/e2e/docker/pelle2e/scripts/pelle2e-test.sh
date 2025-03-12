@@ -16,20 +16,29 @@ function load_defaults {
 }
 
 function operator_healthcheck {
-  set +e
   local container_name=$1
+  local timeout=120  # 2 minutes timeout
+  local elapsed=0
+
   while true; do
     ssh $container_name "test -f /root/operator_initialized"
     if [ $? -eq 0 ]; then
       echo "✅️ Operator initialized, proceeding to the next step..."
       break
     fi
+
     echo "⌛️ Operator not initialized, retrying in 2 second..."
     sleep 2
+    elapsed=$((elapsed + 2))
+
+    if [ $elapsed -ge $timeout ]; then
+      echo "❌ Timeout reached! Exiting script."
+      exit 1
+    fi
   done
+
   ## Wait for operator to be ready
   sleep 3
-  set -e
 }
 
 function assert_eq {

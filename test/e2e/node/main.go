@@ -107,7 +107,7 @@ func startNode(cfg *Config) error {
 	}
 
 	n, err := node.NewNode(cmtcfg,
-		privval.LoadOrGenFilePV(cmtcfg.PrivValidatorKeyFile(), cmtcfg.PrivValidatorStateFile()),
+		privval.LoadOrGenFilePV(cmtcfg.PrivValidatorKeyFile()),
 		nodeKey,
 		clientCreator,
 		config.DefaultDBProvider,

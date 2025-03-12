@@ -77,8 +77,7 @@ func NewTendermint(app avsi.Application, opts *Options) *nm.Node {
 		config.RPC.MaxRequestBatchSize = opts.maxReqBatchSize
 	}
 	pvKeyFile := config.PrivValidatorKeyFile()
-	pvKeyStateFile := config.PrivValidatorStateFile()
-	pv := privval.LoadOrGenFilePV(pvKeyFile, pvKeyStateFile)
+	pv := privval.LoadOrGenFilePV(pvKeyFile)
 	papp := proxy.NewLocalClientCreator(app)
 	nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
 	if err != nil {

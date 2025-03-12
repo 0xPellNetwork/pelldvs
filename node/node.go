@@ -113,15 +113,13 @@ func NewNode(config *cfg.Config,
 	nodeKey *p2p.NodeKey,
 	clientCreator proxy.ClientCreator,
 	dbProvider cfg.DBProvider,
-	//dvsReactor security.DVSReactor,
 	aggregator aggregator.Aggregator,
 	metricsProvider MetricsProvider,
 	logger log.Logger,
 	options ...Option,
 ) (*Node, error) {
 	return NewNodeWithContext(context.TODO(), config, privValidator,
-		//return NewNodeWithContext(context.TODO(), config,
-		nodeKey, clientCreator, dbProvider, aggregator, //dvsReactor
+		nodeKey, clientCreator, dbProvider, aggregator,
 		metricsProvider, logger, options...)
 }
 
@@ -232,7 +230,8 @@ func NewNodeWithContext(ctx context.Context,
 	// Add private IDs to addrbook to block those peers being added
 	addrBook.AddPrivateIDs(splitAndTrimEmpty(config.P2P.PrivatePeerIDs, ",", " "))
 
-	dvsReactor, err := security.CreateDVSReactor(*config.Pell, proxyApp, aggregator, config.RootDir+"/data/security_store", dvsRequestIndexer, db, logger)
+	dvsReactor, err := security.CreateDVSReactor(*config.Pell, proxyApp, aggregator, config.RootDir+"/data/security_store",
+		dvsRequestIndexer, db, logger, privValidator)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create dvsReactor: %w", err)
 	}

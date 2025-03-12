@@ -6,16 +6,10 @@ import (
 
 	dbm "github.com/cometbft/cometbft-db"
 
-	"github.com/0xPellNetwork/pelldvs-libs/crypto/bls"
 	"github.com/0xPellNetwork/pelldvs/config"
 	"github.com/0xPellNetwork/pelldvs/crypto/ecdsa"
-	opTypes "github.com/0xPellNetwork/pelldvs/types"
+	"github.com/0xPellNetwork/pelldvs/types"
 )
-
-type PrivValidator interface {
-	GetKeyPair() *bls.KeyPair
-	SignMessage(message []byte) (*bls.Signature, error)
-}
 
 type DVSReqStore interface {
 	SaveReq(req *DVSReqResponse) error
@@ -23,22 +17,12 @@ type DVSReqStore interface {
 }
 
 type DVSState struct {
-	privValidator PrivValidator
-	operatorID    opTypes.OperatorID
-	dvsReqStore   DVSReqStore
+	operatorID  types.OperatorID
+	dvsReqStore DVSReqStore
 }
 
 // NewDVSState creates a new DVSState instance
 func NewDVSState(cfg *config.PellConfig, dvsReqStore DVSReqStore, storeDir string) (*DVSState, error) {
-	// Read private key from config file
-	privKey, err := bls.ReadPrivateKeyFromFile(cfg.OperatorBLSPrivateKeyStorePath, "")
-	if err != nil {
-		return nil, fmt.Errorf("failed to read BLS private key: %v", err)
-	}
-
-	// Generate operatorId using public key
-	//operatorID := opTypes.GenOperatorIdOffChain(privKey.GetPubKeyG1())
-
 	// get operator address
 	operatorAddress, err := ecdsa.GetAddressFromKeyStoreFile(cfg.OperatorECDSAPrivateKeyStorePath)
 	if err != nil {
@@ -46,13 +30,7 @@ func NewDVSState(cfg *config.PellConfig, dvsReqStore DVSReqStore, storeDir strin
 	}
 
 	// generate operatorID
-	operatorID := opTypes.GenOperatorIDByAddress(operatorAddress)
-
-	// Create privValidator
-	privValidator := &blsPrivValidator{
-		operatorID: operatorID,
-		privKey:    privKey,
-	}
+	operatorID := types.GenOperatorIDByAddress(operatorAddress)
 
 	// If no dvsReqStore is provided, create a local storage implementation
 	if dvsReqStore == nil {
@@ -64,27 +42,9 @@ func NewDVSState(cfg *config.PellConfig, dvsReqStore DVSReqStore, storeDir strin
 	}
 
 	return &DVSState{
-		privValidator: privValidator,
-		operatorID:    operatorID,
-		dvsReqStore:   dvsReqStore,
+		operatorID:  operatorID,
+		dvsReqStore: dvsReqStore,
 	}, nil
-}
-
-type blsPrivValidator struct {
-	operatorID opTypes.OperatorID
-	privKey    *bls.KeyPair
-}
-
-func (v *blsPrivValidator) GetKeyPair() *bls.KeyPair {
-	return v.privKey
-}
-
-func (v *blsPrivValidator) SignMessage(message []byte) (*bls.Signature, error) {
-
-	var msg [32]byte
-	copy(msg[:], message)
-	sig := v.privKey.SignMessage(msg)
-	return sig, nil
 }
 
 func (dvsState *DVSState) SaveReq(req *DVSReqResponse) error {

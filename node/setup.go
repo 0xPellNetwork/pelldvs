@@ -42,8 +42,13 @@ func DefaultNewNode(config *cfg.Config, logger log.Logger) (*Node, error) {
 		return nil, fmt.Errorf("failed to create RPCAggregator")
 	}
 
+	pv, err := privval.LoadOrGenFilePV(config.Pell.OperatorBLSPrivateKeyStorePath)
+	if err != nil {
+		return nil, err
+	}
+
 	return NewNode(config,
-		privval.LoadOrGenFilePV(config.Pell.OperatorBLSPrivateKeyStorePath),
+		pv,
 		nodeKey,
 		proxy.DefaultClientCreator(config.ProxyApp, config.AVSI, config.DBDir()),
 		cfg.DefaultDBProvider,

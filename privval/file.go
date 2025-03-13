@@ -95,10 +95,11 @@ func loadFilePV(keyFilePath string) *FilePV {
 // or else generates a new one and saves it to the filePaths.
 func LoadOrGenFilePV(keyFilePath string) (*FilePV, error) {
 	var pv *FilePV
+	var err error
 	if cmtos.FileExists(keyFilePath) {
 		pv = LoadFilePV(keyFilePath)
 	} else {
-		pv, err := GenFilePV(keyFilePath)
+		pv, err = GenFilePV(keyFilePath)
 		if err != nil {
 			return nil, err
 		}

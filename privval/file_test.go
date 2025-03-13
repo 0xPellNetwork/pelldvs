@@ -19,19 +19,15 @@ func TestGenLoadValidator(t *testing.T) {
 func TestLoadOrGenValidator(t *testing.T) {
 	tempKeyFile, err := os.CreateTemp("", "priv_validator_key_")
 	require.Nil(t, err)
-	tempStateFile, err := os.CreateTemp("", "priv_validator_state_")
-	require.Nil(t, err)
 
 	tempKeyFilePath := tempKeyFile.Name()
 	if err := os.Remove(tempKeyFilePath); err != nil {
 		t.Error(err)
 	}
-	tempStateFilePath := tempStateFile.Name()
-	if err := os.Remove(tempStateFilePath); err != nil {
-		t.Error(err)
-	}
 
-	privVal := LoadOrGenFilePV(tempKeyFilePath)
+	privVal, err := LoadOrGenFilePV(tempKeyFilePath)
+	require.NoError(t, err)
+
 	t.Log(privVal.String())
 }
 
@@ -41,7 +37,8 @@ func newTestFilePV(t *testing.T) (*FilePV, string, string) {
 	tempStateFile, err := os.CreateTemp(t.TempDir(), "priv_validator_state_")
 	require.NoError(t, err)
 
-	privVal := GenFilePV(tempKeyFile.Name())
+	privVal, err := GenFilePV(tempKeyFile.Name())
+	require.NoError(t, err)
 
 	return privVal, tempKeyFile.Name(), tempStateFile.Name()
 }

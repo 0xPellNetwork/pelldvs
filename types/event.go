@@ -1,7 +1,8 @@
 package types
 
-// Reserved event types (alphabetically sorted).
+type ReactorEvent string
+
 const (
-	EventTx  = "Tx"
-	EventDVS = "Dvs"
+	CollectResponseSignatureRequest ReactorEvent = "CollectResponseSignatureRequest"
+	CollectResponseSignatureDone    ReactorEvent = "CollectResponseSignatureDone"
 )

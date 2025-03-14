@@ -34,17 +34,18 @@ type DVSReactor struct {
 	dvsRequestIndexer requestindex.DvsRequestIndexer
 	dvsReader         reader.DVSReader
 	privValidator     types.PrivValidator
+	bus               *types.ReactorEventBus
 }
 
 func CreateDVSReactor(
 	config config.PellConfig,
 	proxyApp proxy.AppConns,
-	aggregator aggtypes.Aggregator,
 	storeDir string,
 	dvsRequestIndexer requestindex.DvsRequestIndexer,
 	db dbm.DB,
 	logger log.Logger,
 	privValidator types.PrivValidator,
+	bus *types.ReactorEventBus,
 ) (DVSReactor, error) {
 	dvsReqStore, err := NewStore(storeDir)
 	if err != nil {
@@ -66,10 +67,10 @@ func CreateDVSReactor(
 		ProxyApp:          proxyApp,
 		dvsState:          dvsState,
 		logger:            logger,
-		aggregator:        aggregator,
 		dvsRequestIndexer: dvsRequestIndexer,
 		dvsReader:         dvsReader,
 		privValidator:     privValidator,
+		bus:               bus,
 	}
 
 	return dvs, nil
@@ -303,4 +304,13 @@ func (dvs *DVSReactor) OnRequest(request avsitypes.DVSRequest) (*avsitypes.DVSRe
 		ResponseProcessDvsRequest:  responseProcessDVSRequest,
 		ResponseProcessDvsResponse: responseProcessDVSResponse,
 	}, nil
+}
+
+func (dvs *DVSReactor) RequestSignatureCollection() {
+	dvs.logger.Info("Publishing CollectResponseSignatureRequest event")
+	dvs.bus.Publish(types.CollectResponseSignatureRequest)
+}
+
+func (dvs *DVSReactor) HandleSignatureCollectionResponse() {
+
 }

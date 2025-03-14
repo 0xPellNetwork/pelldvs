@@ -14,7 +14,6 @@ const (
 	// EventTypeKey is a reserved composite key for event name.
 	EventTypeKey = "dvs.event"
 	// DVSHashKey is a reserved key, used to specify DVS request's hash.
-	// see EventBus#PublishEventTx
 	DVSHashKey = "dvs.hash"
 
 	// DVSHeightKey is a reserved key, used to specify DVS request block's height.

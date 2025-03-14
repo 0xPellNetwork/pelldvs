@@ -126,12 +126,16 @@ function stake_and_delegate_to_operator() {
 
   cast call $STBTC_ERC20_ADDRESS "balanceOf(address)(uint256)" $TestDeployerEvmAddr --rpc-url $ETH_RPC_URL
 
+  sleep 5
+
   cast send $STBTC_ERC20_ADDRESS \
     "approve(address,uint256)" \
     $STRTEGY_MANAGER_ADDRESS \
     $STAKE_AMOUNT \
     --private-key $TestDeployerPrivKey \
     --rpc-url $ETH_RPC_URL
+
+  sleep 5
 
   cast send $STRTEGY_MANAGER_ADDRESS \
     "depositIntoStrategy(address,address,uint256)" \
@@ -140,6 +144,8 @@ function stake_and_delegate_to_operator() {
     $STAKE_AMOUNT \
     --private-key $TestDeployerPrivKey \
     --rpc-url $ETH_RPC_URL
+
+  sleep 5
 
   logt "Query Strategy Shares"
 
@@ -164,7 +170,7 @@ function stake_and_delegate_to_operator() {
     --private-key $TestDeployerPrivKey \
     --rpc-url $ETH_RPC_URL
 
-  logt "Query Operator Shares"
+  logt "Query Operator Shares from Staking Chain and Pell Chain"
 
   cast call $DELEGATION_MNAGER \
     "getOperatorShares(address,address[])(uint256[])" \
@@ -172,13 +178,15 @@ function stake_and_delegate_to_operator() {
     "[$STBTC_STRATEGY_ADDRESS]" \
     --rpc-url $ETH_RPC_URL
 
+  sleep 5
+
   cast call $PELL_DELEGATION_MNAGER \
     "getOperatorShares(address,(uint256,address)[])(uint256[])" \
     $OPERATOR_ADDRESS \
     "[(1337,$STBTC_STRATEGY_ADDRESS)]" \
     --rpc-url $ETH_RPC_URL
 
-  logt "Query group mini stake"
+  logt "Query group mini stake from Pell Chain"
 
   REGISTRY_ROUTER_ADDRESS=$(ssh emulator "cat /root/RegistryRouterAddress.json" | jq -r .address)
   STAKE_REGISTRY_ROUTER=$(cast call $REGISTRY_ROUTER_ADDRESS "stakeRegistryRouter()(address)" --rpc-url $ETH_RPC_URL)
@@ -186,6 +194,22 @@ function stake_and_delegate_to_operator() {
   cast call $STAKE_REGISTRY_ROUTER \
     "minimumStakeForGroup(uint8)(uint96)" \
     0 \
+    --rpc-url $ETH_RPC_URL
+
+  logt "Query weight of operator from Pell Chain and Service Chain"
+
+  OPERATOR_STAKE_MNAGER=$(ssh hardhat "cat $HARDHAT_DVS_PATH/OperatorStakeManager-Proxy.json" | jq -r .address)
+
+  cast call $STAKE_REGISTRY_ROUTER \
+    "weightOfOperatorForGroup(uint8,address)(uint96)" \
+    0 $OPERATOR_ADDRESS \
+    --rpc-url $ETH_RPC_URL
+
+  sleep 5
+
+  cast call $OPERATOR_STAKE_MNAGER \
+    "weightOfOperatorForGroup(uint8,address)(uint96)" \
+    0 $OPERATOR_ADDRESS \
     --rpc-url $ETH_RPC_URL
 
   logt "Delegate to Operator Done"

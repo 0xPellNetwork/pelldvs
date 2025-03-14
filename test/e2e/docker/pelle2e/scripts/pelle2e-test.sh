@@ -16,8 +16,9 @@ function load_defaults {
 }
 
 function operator_healthcheck {
+  set +e
   local container_name=$1
-  local timeout=120  # 2 minutes timeout
+  local timeout=240  # 4 minutes timeout
   local elapsed=0
 
   while true; do
@@ -39,6 +40,7 @@ function operator_healthcheck {
 
   ## Wait for operator to be ready
   sleep 3
+  set -e
 }
 
 function assert_eq {

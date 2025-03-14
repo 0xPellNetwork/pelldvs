@@ -106,8 +106,12 @@ func startNode(cfg *Config) error {
 		nodeLogger.Info("Using default (synchronized) local client creator")
 	}
 
+	pv, err := privval.LoadOrGenFilePV(cmtcfg.PrivValidatorKeyFile())
+	if err != nil {
+		return err
+	}
 	n, err := node.NewNode(cmtcfg,
-		privval.LoadOrGenFilePV(cmtcfg.PrivValidatorKeyFile()),
+		pv,
 		nodeKey,
 		clientCreator,
 		config.DefaultDBProvider,

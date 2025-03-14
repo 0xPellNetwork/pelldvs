@@ -14,12 +14,9 @@ import (
 	"time"
 
 	dbm "github.com/cometbft/cometbft-db"
-	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/0xPellNetwork/pelldvs-interactor/chainlibs/eth"
 	interactorcfg "github.com/0xPellNetwork/pelldvs-interactor/config"
-	"github.com/0xPellNetwork/pelldvs-interactor/interactor/indexer"
-	operatorinfoprovider "github.com/0xPellNetwork/pelldvs-interactor/interactor/operator_info_provider"
+	"github.com/0xPellNetwork/pelldvs-interactor/interactor/reader"
 	"github.com/0xPellNetwork/pelldvs-interactor/types"
 	"github.com/0xPellNetwork/pelldvs-libs/crypto/bls"
 	"github.com/0xPellNetwork/pelldvs-libs/log"
@@ -62,19 +59,10 @@ func NewRPCServerAggregator(
 		return nil, fmt.Errorf("failed to create interactor config from file: %v", err)
 	}
 
-	pellIndexer, err := indexer.NewInitedPellIndexer(interactorConfig.RPCURL,
-		common.HexToAddress(interactorConfig.ContractConfig.PellDelegationManager),
-		common.HexToAddress(interactorConfig.ContractConfig.PellRegistryRouter),
-		interactorConfig.ContractConfig.IndexerStartHeight,
-		interactorConfig.ContractConfig.IndexerBatchSize,
-		interactorConfig.ContractConfig.IndexerListenInterval,
-		db,
-		logger,
-	)
+	dvsReader, err := reader.NewDVSReaderFromConfig(interactorConfig, db, logger)
 	if err != nil {
-		return nil, fmt.Errorf("failed to init pell store: %v", err)
+		return nil, fmt.Errorf("failed to create DVS reader: %v", err)
 	}
-	pellStore := pellIndexer.GetStore()
 
 	timeout, err := aggConfig.GetOperatorResponseTimeout()
 	if err != nil {
@@ -88,44 +76,8 @@ func NewRPCServerAggregator(
 		rpcAddress:              aggConfig.AggregatorRPCServer,
 		chainConfigs:            interactorConfig.ContractConfig.DVSConfigs,
 		tasksLocks:              tasksLocks,
-		dvsInteractor:           make(map[uint64]*AggregatorDVSInteractor),
 		Logger:                  logger.With("module", "RPCServerAggregatorServer"),
-	}
-
-	dvsConfigs := make(map[uint64]*interactorcfg.DVSConfig)
-
-	for chainID, chainConfig := range interactorConfig.ContractConfig.DVSConfigs {
-		pellClient, err := eth.NewClient(chainConfig.RPCURL)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create eth client for chain %d: %v", chainID, err)
-		}
-
-		dvsConfigs[chainID] = &interactorcfg.DVSConfig{
-			RPCURL:               chainConfig.RPCURL,
-			ChainID:              chainID,
-			OperatorInfoProvider: chainConfig.OperatorInfoProvider,
-			OperatorKeyManager:   chainConfig.OperatorKeyManager,
-			CentralScheduler:     chainConfig.CentralScheduler,
-		}
-
-		osrConfig := &interactorcfg.Config{
-			ContractConfig: interactorcfg.ContractConfig{
-				PellRegistryRouter:    interactorConfig.ContractConfig.PellRegistryRouter,
-				PellDelegationManager: interactorConfig.ContractConfig.PellDelegationManager,
-				DVSConfigs:            dvsConfigs,
-			},
-		}
-
-		operatorStateRetrieverInteractor, err := operatorinfoprovider.New(osrConfig, pellClient, logger, chainID, pellStore)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create operator state retriever interactor for chain %d: %v", chainID, err)
-		}
-
-		dvsInteractor := NewAggregatorDVSInteractor(
-			*operatorStateRetrieverInteractor,
-			pellStore)
-
-		ra.dvsInteractor[chainID] = dvsInteractor
+		dvsReader:               dvsReader,
 	}
 	ra.BaseService = *service.NewBaseService(nil, "RPCServerAggregator", ra)
 	return ra, nil
@@ -197,19 +149,19 @@ func (ra *RPCServerAggregator) CollectResponseSignature(response *aggregator.Res
 
 		blockNumber := uint32(response.RequestData.Height)
 
-		operatorsDvsStateDict, err := ra.dvsInteractor[chainID.Uint64()].GetOperatorsDVSStateAtBlock(groupNumbers, blockNumber)
+		operatorsDvsStateDict, err := ra.dvsReader.GetOperatorsDVSStateAtBlock(chainID.Uint64(), groupNumbers, blockNumber)
 		if err != nil {
 			ra.Logger.Error("Failed to get operators DVS state", "block", blockNumber, "error", err)
 			return err
 		}
 
-		groupsDvsStateDict, err := ra.dvsInteractor[chainID.Uint64()].GetGroupsDVSStateAtBlock(groupNumbers, blockNumber)
+		groupsDvsStateDict, err := ra.dvsReader.GetGroupsDVSStateAtBlock(chainID.Uint64(), groupNumbers, blockNumber)
 		if err != nil {
 			ra.Logger.Error("Failed to get groups DVS state", "block", blockNumber, "error", err)
 			return err
 		}
 
-		operatorStateInfo, err := ra.dvsInteractor[chainID.Uint64()].getOperatorState(groupNumbers, blockNumber)
+		operatorStateInfo, err := ra.dvsReader.GetOperatorState(chainID.Uint64(), groupNumbers, blockNumber)
 		if err != nil {
 			ra.Logger.Error("Failed to get operator state", "error", err)
 			return fmt.Errorf("failed to get operator state: %v", err)
@@ -258,7 +210,7 @@ func (ra *RPCServerAggregator) generateTaskID(request interface{}) string {
 
 func (ra *RPCServerAggregator) processResponses(task *Task) {
 	for response := range task.responsesChan {
-		_, err := ra.dvsInteractor[task.chainConfig.ChainID].GetOperatorInfoByID(types.OperatorID(response.OperatorID))
+		_, err := ra.dvsReader.GetOperatorInfoByID(response.OperatorID)
 		if err != nil {
 			ra.Logger.Error("Failed to get operator info",
 				"taskID", task.taskID, "operatorID", response.OperatorID,
@@ -369,7 +321,7 @@ func (ra *RPCServerAggregator) aggregateSignatures(task *Task) (*aggregator.Vali
 	for _, response := range task.operatorResponses {
 		if response.Digest == selectedDigest {
 			addrOperatorID := response.OperatorID
-			operator, _ := ra.dvsInteractor[task.chainConfig.ChainID].GetOperatorInfoByID(addrOperatorID)
+			operator, _ := ra.dvsReader.GetOperatorInfoByID(addrOperatorID)
 			aggregatedSignature.Add(response.Signature)
 			signersApkG2.Add(operator.Pubkeys.G2Pubkey)
 		}
@@ -386,7 +338,7 @@ func (ra *RPCServerAggregator) aggregateSignatures(task *Task) (*aggregator.Vali
 		}
 		for _, operator := range operatorInfos {
 			addrOperatorID := operator.OperatorID
-			operatorInfo, err := ra.dvsInteractor[task.chainConfig.ChainID].GetOperatorInfoByID(addrOperatorID)
+			operatorInfo, err := ra.dvsReader.GetOperatorInfoByID(addrOperatorID)
 			if err != nil {
 				return nil, fmt.Errorf("failed to get operator info by ID: %v", err)
 			}
@@ -433,7 +385,8 @@ func (ra *RPCServerAggregator) aggregateSignatures(task *Task) (*aggregator.Vali
 		nonSignersPubkeysG1 = append(nonSignersPubkeysG1, operator.Pubkeys.G1Pubkey)
 	}
 
-	indices, err := ra.dvsInteractor[task.chainConfig.ChainID].GetCheckSignaturesIndices(
+	indices, err := ra.dvsReader.GetCheckSignaturesIndices(
+		task.chainConfig.ChainID,
 		task.blockNumber,
 		task.groupNumbers,
 		nonSignersOperatorIds,

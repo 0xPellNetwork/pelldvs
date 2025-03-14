@@ -14,15 +14,19 @@ import (
 var GenValidatorCmd = &cobra.Command{
 	Use:   "gen-validator",
 	Short: "Generate new validator keypair",
-	Run:   genValidator,
+	RunE:  genValidator,
 }
 
-func genValidator(*cobra.Command, []string) {
-	pv := privval.GenFilePV("")
+func genValidator(*cobra.Command, []string) error {
+	pv, err := privval.GenFilePV("")
+	if err != nil {
+		return fmt.Errorf("cannot generate file pv: %w", err)
+	}
 	jsbz, err := cmtjson.Marshal(pv)
 	if err != nil {
 		panic(err)
 	}
 	fmt.Printf(`%v
 `, string(jsbz))
+	return nil
 }

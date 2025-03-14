@@ -15,19 +15,20 @@ const (
 )
 
 type FilePVKey struct {
-	keyPair  bls.KeyPair
+	KeyPair bls.KeyPair `json:"key_pair"`
+
 	filePath string
 }
 
 func (v FilePVKey) GetKeyPair() bls.KeyPair {
-	return v.keyPair
+	return v.KeyPair
 }
 
 func (v FilePVKey) Save() {
 	if v.filePath == "" {
 		panic("cannot save FilePVKey: filePath not set")
 	}
-	err := v.keyPair.SaveToFile(v.filePath, emptyPassword)
+	err := v.KeyPair.SaveToFile(v.filePath, emptyPassword)
 	if err != nil {
 		panic(err)
 	}
@@ -48,7 +49,7 @@ type FilePV struct {
 func NewFilePV(blsKeyPair bls.KeyPair, blsKeyFilePath string) *FilePV {
 	return &FilePV{
 		Key: FilePVKey{
-			keyPair:  blsKeyPair,
+			KeyPair:  blsKeyPair,
 			filePath: blsKeyFilePath,
 		},
 	}
@@ -56,12 +57,12 @@ func NewFilePV(blsKeyPair bls.KeyPair, blsKeyFilePath string) *FilePV {
 
 // GenFilePV generates a new validator with randomly generated private key
 // and sets the filePaths, but does not call Save().
-func GenFilePV(blsKeyFilePath string) *FilePV {
+func GenFilePV(blsKeyFilePath string) (*FilePV, error) {
 	blsKeys, err := bls.GenRandomBlsKeys()
 	if err != nil {
-		cmtos.Exit(fmt.Sprintf("Error generating BLS key: %v", err))
+		return nil, err
 	}
-	return NewFilePV(*blsKeys, blsKeyFilePath)
+	return NewFilePV(*blsKeys, blsKeyFilePath), nil
 }
 
 // LoadFilePV loads a FilePV from the filePaths.  The FilePV handles double
@@ -81,7 +82,7 @@ func loadFilePV(keyFilePath string) *FilePV {
 
 	// Create and return FilePVKey instance
 	blsKey := FilePVKey{
-		keyPair:  *privateKey,
+		KeyPair:  *privateKey,
 		filePath: keyFilePath,
 	}
 
@@ -92,15 +93,19 @@ func loadFilePV(keyFilePath string) *FilePV {
 
 // LoadOrGenFilePV loads a FilePV from the given filePaths
 // or else generates a new one and saves it to the filePaths.
-func LoadOrGenFilePV(keyFilePath string) *FilePV {
+func LoadOrGenFilePV(keyFilePath string) (*FilePV, error) {
 	var pv *FilePV
+	var err error
 	if cmtos.FileExists(keyFilePath) {
 		pv = LoadFilePV(keyFilePath)
 	} else {
-		pv = GenFilePV(keyFilePath)
+		pv, err = GenFilePV(keyFilePath)
+		if err != nil {
+			return nil, err
+		}
 		pv.Save()
 	}
-	return pv
+	return pv, nil
 }
 
 func (v *FilePV) SignBytes(bytes []byte) (*bls.Signature, error) {
@@ -114,7 +119,7 @@ func (v *FilePV) SignBytes(bytes []byte) (*bls.Signature, error) {
 // GetPubKey returns the public key of the validator.
 // Implements PrivValidator.
 func (pv *FilePV) GetPubKey() (*bls.G1Point, error) {
-	return pv.Key.keyPair.PubKey, nil
+	return pv.Key.KeyPair.PubKey, nil
 }
 
 // Save persists the FilePV to disk.
@@ -124,5 +129,5 @@ func (pv *FilePV) Save() {
 
 // String returns a string representation of the FilePV.
 func (pv *FilePV) String() string {
-	return fmt.Sprintf("FilePV{%v}", pv.Key.keyPair.PubKey)
+	return fmt.Sprintf("FilePV{%v}", pv.Key.KeyPair.PubKey)
 }

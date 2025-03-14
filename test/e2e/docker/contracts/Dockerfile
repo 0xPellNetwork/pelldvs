@@ -1,9 +1,11 @@
 FROM node:18
 
-ARG GITHUB_TOKEN
 ARG HTTP_PROXY
 ARG HTTPS_PROXY
-ARG CONTRACT_VERSION
+
+RUN --mount=type=secret,id=github_token \
+    if [ ! -s /run/secrets/github_token ]; then echo "github token is not set via secrets" >&2; exit 1; fi; \
+    git config --global url."https://$(cat /run/secrets/github_token):x-oauth-basic@github.com/0xPellNetwork".insteadOf "https://github.com/0xPellNetwork"
 
 RUN apt-get update -yqq && apt-get install -yqq openssh-server curl jq
 RUN mkdir -p /run/sshd && chmod 0755 /run/sshd
@@ -23,10 +25,7 @@ RUN curl -L https://foundry.paradigm.xyz | bash
 ENV PATH="$PATH:/root/.foundry/bin"
 RUN foundryup
 
-ARG GITHUB_TOKEN
-RUN if [ -z "$GITHUB_TOKEN" ]; then echo "GITHUB_TOKEN is not set" && exit 1; fi
-RUN git config --global url."https://${GITHUB_TOKEN}:x-oauth-basic@github.com/0xPellNetwork".insteadOf "https://github.com/0xPellNetwork"
-
+ARG CONTRACT_VERSION
 RUN git clone https://github.com/0xPellNetwork/pell-middleware-contracts.git --branch $CONTRACT_VERSION --depth 1
 
 ########## Install contracts ##########

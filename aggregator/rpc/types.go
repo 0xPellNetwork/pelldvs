@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	interactorcfg "github.com/0xPellNetwork/pelldvs-interactor/config"
+	"github.com/0xPellNetwork/pelldvs-interactor/interactor/reader"
 	"github.com/0xPellNetwork/pelldvs-interactor/types"
 	"github.com/0xPellNetwork/pelldvs-libs/log"
 	"github.com/0xPellNetwork/pelldvs/aggregator"
@@ -25,7 +26,7 @@ type Task struct {
 	blockNumber           uint32
 	chainConfig           *interactorcfg.DVSConfig
 	digestToOperators     map[ResultDigest][]types.OperatorID
-	operatorStateInfo     *OperatorStateInfo
+	operatorStateInfo     *reader.OperatorStateInfo
 	operatorsDvsStateDict map[types.OperatorID]types.OperatorDVSState
 	groupOperatorMap      map[types.GroupNumber]types.GroupDVSState
 	groupNumbers          types.GroupNumbers
@@ -43,7 +44,7 @@ type RPCServerAggregator struct {
 	listener                net.Listener
 	rpcAddress              string
 	chainConfigs            map[uint64]*interactorcfg.DVSConfig
-	dvsInteractor           map[uint64]*AggregatorDVSInteractor
+	dvsReader               reader.DVSReader
 	Logger                  log.Logger
 }
 

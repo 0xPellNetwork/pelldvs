@@ -81,24 +81,17 @@ include tests.mk
 
 #? build: Build PellDVS
 build:
-	make pelldvs-build;
+	CGO_ENABLED=$(CGO_ENABLED) go build $(BUILD_FLAGS) -tags '$(BUILD_TAGS)' -o ./build/pelldvs ./cmd/pelldvs/
 .PHONY: build
 
 build-debug:
 	go build -gcflags="all=-N -l" --trimpath=false -o ./build/pelldvs ./cmd/pelldvs/
 .PHONY: build-debug
 
-pelldvs-build:
-	CGO_ENABLED=$(CGO_ENABLED) go build $(BUILD_FLAGS) -tags '$(BUILD_TAGS)' -o ./build/pelldvs ./cmd/pelldvs/
-
 #? install: Install PellDVS to GOBIN
 install:
-	make pelldvs-install;
-.PHONY: install
-
-pelldvs-install:
 	CGO_ENABLED=$(CGO_ENABLED) go install $(BUILD_FLAGS) -tags $(BUILD_TAGS) ./cmd/pelldvs
-
+.PHONY: install
 
 ###############################################################################
 ###                               Metrics                                   ###

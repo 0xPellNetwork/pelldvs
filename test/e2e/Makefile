@@ -121,9 +121,6 @@ docker-build-all:
 docker-build-contract:
 	docker compose -f docker-compose.build.yml build hardhat
 
-docker-build-emulator:
-	docker compose -f docker-compose.build.yml build emulator
-
 docker-build-pelldvs:
 	docker compose -f docker-compose.build.yml build pelldvs
 

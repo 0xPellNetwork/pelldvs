@@ -33,9 +33,9 @@ require (
 require github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7 // indirect
 
 require (
-	github.com/0xPellNetwork/contracts v0.2.31
 	github.com/0xPellNetwork/pell-middleware-contracts v0.2.32
-	github.com/0xPellNetwork/pelldvs-interactor v0.0.11
+	github.com/0xPellNetwork/pelldvs-interactor v0.0.12
+	github.com/0xPellNetwork/pelldvs-libs v0.2.0
 	github.com/AlecAivazis/survey/v2 v2.3.7
 	github.com/cometbft/cometbft-db v0.14.1
 	github.com/consensys/gnark-crypto v0.16.0
@@ -50,7 +50,7 @@ require (
 )
 
 require (
-	github.com/0xPellNetwork/pelldvs-libs v0.2.0 // indirect
+	github.com/0xPellNetwork/contracts v0.2.31 // indirect
 	github.com/DataDog/zstd v1.4.5 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/StackExchange/wmi v1.2.1 // indirect

@@ -33,7 +33,7 @@ services:
         GITHUB_TOKEN: ${GITHUB_TOKEN}
         CONTRACT_VERSION: ${CONTRACT_VERSION:-v0.2.32}
       tags:
-        - pellnetwork/pelldvs-e2e-hardhat:${CONTRACT_VERSION:-latest}
+        - pellnetwork/pelldvs-e2e-hardhat:${CONTRACT_VERSION:-v0.2.32}
       secrets:
         - github_token
 

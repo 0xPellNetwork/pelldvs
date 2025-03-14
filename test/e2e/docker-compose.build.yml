@@ -1,3 +1,4 @@
+name: pelldvs-e2e
 services:
   pelldvs:
     build:
@@ -8,9 +9,9 @@ services:
         HTTPS_PROXY: ${HTTPS_PROXY}
         GITHUB_TOKEN: ${GITHUB_TOKEN}
         DEBUG_ENABLED: ${DEBUG_ENABLED:-false}
-        EMULATOR_VERSION: ${EMULATOR_VERSION:-v0.1.1}
-      tags:
-        - "pelldvs/e2e-pelldvs:latest"
+        EMULATOR_VERSION: ${EMULATOR_VERSION:-v0.1.3}
+      secrets:
+        - github_token
   pelle2e:
     build:
       context: ../..
@@ -20,8 +21,8 @@ services:
         HTTPS_PROXY: ${HTTPS_PROXY}
         GITHUB_TOKEN: ${GITHUB_TOKEN}
         DEBUG_ENABLED: ${DEBUG_ENABLED:-false}
-      tags:
-        - "pelldvs/e2e-pelle2e:latest"
+      secrets:
+        - github_token
   hardhat:
     build:
       context: ./
@@ -32,4 +33,10 @@ services:
         GITHUB_TOKEN: ${GITHUB_TOKEN}
         CONTRACT_VERSION: ${CONTRACT_VERSION:-v0.2.32}
       tags:
-        - "pelldvs/e2e-hardhat:${CONTRACT_VERSION:-latest}"
+        - pellnetwork/pelldvs-e2e-hardhat:${CONTRACT_VERSION:-v0.2.32}
+      secrets:
+        - github_token
+
+secrets:
+  github_token:
+    environment: GITHUB_TOKEN

@@ -2,6 +2,14 @@ COMETBFT_BUILD_OPTIONS += badgerdb,boltdb,cleveldb,rocksdb
 
 include ../../common.mk
 
+check-env-gh-token:
+	@if [ -z "$${GITHUB_TOKEN}" ] ; then \
+		echo "Error: GITHUB_TOKEN is not set in environment"; \
+		exit 1; \
+	else \
+		echo "GITHUB_TOKEN is set."; \
+	fi
+
 all: generator runner
 
 node:
@@ -115,19 +123,16 @@ docker-contracts-bash-eth:
 docker-contracts-bash-hardhat:
 	docker compose exec hardhat bash
 
-docker-build-all:
+docker-build-all: check-env-gh-token
 	docker compose -f docker-compose.build.yml build
 
-docker-build-contract:
+docker-build-contract: check-env-gh-token
 	docker compose -f docker-compose.build.yml build hardhat
 
-docker-build-emulator:
-	docker compose -f docker-compose.build.yml build emulator
-
-docker-build-pelldvs:
+docker-build-pelldvs: check-env-gh-token
 	docker compose -f docker-compose.build.yml build pelldvs
 
-docker-build-pelle2e:
+docker-build-pelle2e: check-env-gh-token
 	docker compose -f docker-compose.build.yml build pelle2e
 
 .PHONY: all node generator runner

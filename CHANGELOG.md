@@ -5,6 +5,8 @@
 ### Features
 
 (feat) [#10](https://github.com/0xPellNetwork/pelldvs/pull/10) feat(rpc): allow querying by dvs.height 
+(feat) [#14](https://github.com/0xPellNetwork/pelldvs/pull/14) refactor: use interactor reader instead of aggregator interactor #14
+
 
 ### Improvements
 

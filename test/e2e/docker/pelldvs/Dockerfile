@@ -1,16 +1,14 @@
 FROM golang:1.23-bullseye AS build
 
-ARG GITHUB_TOKEN
+RUN --mount=type=secret,id=github_token \
+    if [ ! -s /run/secrets/github_token ]; then echo "github token is not set via secrets" >&2; exit 1; fi; \
+    git config --global url."https://$(cat /run/secrets/github_token):x-oauth-basic@github.com/0xPellNetwork".insteadOf "https://github.com/0xPellNetwork"
+
 ARG HTTP_PROXY
 ARG HTTPS_PROXY
 
 ## Setup env
 WORKDIR /app/pelldvs
-
-ARG GITHUB_TOKEN
-ARG DEBUG_ENABLED
-RUN if [ -z "$GITHUB_TOKEN" ]; then echo "GITHUB_TOKEN is not set" && exit 1; fi
-RUN git config --global url."https://${GITHUB_TOKEN}:x-oauth-basic@github.com/0xPellNetwork".insteadOf "https://github.com/0xPellNetwork"
 
 # Fetch dependencies separately (for layer caching)
 COPY go.mod go.sum ./
@@ -18,6 +16,7 @@ RUN --mount=type=cache,target="/go/pkg/mod" \
     go mod download
 
 COPY . .
+ARG DEBUG_ENABLED
 RUN --mount=type=cache,target="/go/pkg/mod" \
     --mount=type=cache,target="/root/.cache/go-build" \
     if [ "${DEBUG_ENABLED}" = "true" ]; then \

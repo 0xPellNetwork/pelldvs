@@ -1,6 +1,7 @@
+name: pelldvs-e2e
 services:
   test:
-    image: pelldvs/e2e-pelldvs:latest
+    image: pelldvs-e2e-pelldvs:latest
     environment:
       - ETH_RPC_URL=http://eth:8545
       - ETH_WS_URL=ws://eth:8545
@@ -13,7 +14,7 @@ services:
       - ./docker/operator/scripts:/root/scripts
 
   test-pelle2e:
-    image: pelldvs/e2e-pelle2e:latest
+    image: pelldvs-e2e-pelle2e:latest
     environment:
       - ETH_RPC_URL=http://eth:8545
       - ETH_WS_URL=ws://eth:8545
@@ -26,7 +27,7 @@ services:
       - ./docker/pelle2e/scripts:/root/scripts
 
   operator:
-    image: pelldvs/e2e-pelldvs:latest
+    image: pelldvs-e2e-pelldvs:latest
     hostname: operator
     depends_on:
       - aggregator
@@ -44,7 +45,7 @@ services:
       interval: 10s
 
   aggregator:
-    image: pelldvs/e2e-pelldvs:latest
+    image: pelldvs-e2e-pelldvs:latest
     hostname: aggregator
     depends_on:
       emulator:
@@ -63,7 +64,7 @@ services:
       interval: 10s
 
   emulator:
-    image: pelldvs/e2e-pelldvs:latest
+    image: pelldvs-e2e-pelldvs:latest
     environment:
       - ETH_RPC_URL=http://eth:8545
       - ETH_WS_URL=ws://eth:8545
@@ -82,7 +83,7 @@ services:
       interval: 10s
 
   hardhat:
-    image: pelldvs/e2e-hardhat:${CONTRACT_VERSION:-latest}
+    image: pellnetwork/pelldvs-e2e-hardhat:${CONTRACT_VERSION:-v0.2.32}
     volumes:
       - ./docker/contracts/scripts/docker_init.sh:/app/pell-middleware-contracts/scripts/docker_init.sh
     environment:

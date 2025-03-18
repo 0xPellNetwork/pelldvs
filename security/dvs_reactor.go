@@ -34,7 +34,7 @@ type DVSReactor struct {
 	dvsRequestIndexer requestindex.DvsRequestIndexer
 	dvsReader         reader.DVSReader
 	privValidator     types.PrivValidator
-	bus               *types.ReactorEventBus
+	eventManager      *EventManager
 }
 
 func CreateDVSReactor(
@@ -45,7 +45,7 @@ func CreateDVSReactor(
 	db dbm.DB,
 	logger log.Logger,
 	privValidator types.PrivValidator,
-	bus *types.ReactorEventBus,
+	eventManager *EventManager,
 ) (DVSReactor, error) {
 	dvsReqStore, err := NewStore(storeDir)
 	if err != nil {
@@ -70,7 +70,7 @@ func CreateDVSReactor(
 		dvsRequestIndexer: dvsRequestIndexer,
 		dvsReader:         dvsReader,
 		privValidator:     privValidator,
-		bus:               bus,
+		eventManager:      eventManager,
 	}
 
 	return dvs, nil
@@ -114,7 +114,7 @@ func (dvs *DVSReactor) OnRequest(request avsitypes.DVSRequest) (*avsitypes.DVSRe
 	}
 
 	if err := dvs.SaveDVSRequestResult(&reqIdx, true); err != nil {
-		dvs.logger.Error("dvs.SaveDVSRequest save req", "err", err.Error())
+		dvs.logger.Error("dvsReactor.SaveDVSRequest save req", "err", err.Error())
 		return nil, err
 	}
 
@@ -167,7 +167,7 @@ func (dvs *DVSReactor) OnRequest(request avsitypes.DVSRequest) (*avsitypes.DVSRe
 	}
 
 	if err := dvs.SaveDVSRequestResult(&reqResIdx, false); err != nil {
-		dvs.logger.Error("dvs.dvsindex.Index", "err", err.Error())
+		dvs.logger.Error("dvsReactor.dvsindex.Index", "err", err.Error())
 		return nil, err
 	}
 
@@ -194,11 +194,11 @@ func (dvs *DVSReactor) OnRequest(request avsitypes.DVSRequest) (*avsitypes.DVSRe
 	// Create a channel to receive validated response
 	validatedResponseCh := make(chan aggtypes.ValidatedResponse, 1)
 
-	// Send response signature to aggregator and wait for result
+	// Send response signature to aggregatorReactor and wait for result
 	err = dvs.aggregator.CollectResponseSignature(&responseWithSingature, validatedResponseCh)
 	if err != nil {
-		dvs.logger.Error("Failed to send response signature to aggregator", "error", err)
-		return nil, fmt.Errorf("failed to send response signature to aggregator: %v", err)
+		dvs.logger.Error("Failed to send response signature to aggregatorReactor", "error", err)
+		return nil, fmt.Errorf("failed to send response signature to aggregatorReactor: %v", err)
 	}
 
 	var responseProcessDVSResponse *avsitypes.ResponseProcessDVSResponse
@@ -247,7 +247,7 @@ func (dvs *DVSReactor) OnRequest(request avsitypes.DVSRequest) (*avsitypes.DVSRe
 			}
 
 			if err := dvs.SaveDVSRequestResult(&dvsResponseIdx, false); err != nil {
-				dvs.logger.Error("dvs.dvsindex.Index dvsResponseIdx", "err", err.Error())
+				dvs.logger.Error("dvsReactor.dvsindex.Index dvsResponseIdx", "err", err.Error())
 				return nil, err
 			}
 
@@ -270,7 +270,7 @@ func (dvs *DVSReactor) OnRequest(request avsitypes.DVSRequest) (*avsitypes.DVSRe
 			}
 
 			if err := dvs.SaveDVSRequestResult(&resultIdx, false); err != nil {
-				dvs.logger.Error("dvs.dvsindex.Index dvsResponseIdx", "err", err.Error())
+				dvs.logger.Error("dvsReactor.dvsindex.Index dvsResponseIdx", "err", err.Error())
 				return nil, err
 			}
 
@@ -291,7 +291,7 @@ func (dvs *DVSReactor) OnRequest(request avsitypes.DVSRequest) (*avsitypes.DVSRe
 			dvs.logger.Error("Aggregator returned an error", "error", validatedResponse.Err)
 		}
 	case <-time.After(5 * time.Second):
-		return nil, fmt.Errorf("timeout waiting for aggregator response")
+		return nil, fmt.Errorf("timeout waiting for aggregatorReactor response")
 	}
 
 	dvs.logger.Debug("responseWithSingature", "responseWithSingature", responseWithSingature)
@@ -308,7 +308,7 @@ func (dvs *DVSReactor) OnRequest(request avsitypes.DVSRequest) (*avsitypes.DVSRe
 
 func (dvs *DVSReactor) RequestSignatureCollection() {
 	dvs.logger.Info("Publishing CollectResponseSignatureRequest event")
-	dvs.bus.Publish(types.CollectResponseSignatureRequest)
+	dvs.eventManager.eventBus.Publish(types.CollectResponseSignatureRequest)
 }
 
 func (dvs *DVSReactor) HandleSignatureCollectionResponse() {

@@ -19,7 +19,7 @@ func NewReactorEventBus() *ReactorEventBus {
 func (eb *ReactorEventBus) Subscribe(event ReactorEvent) <-chan ReactorEvent {
 	eb.mu.Lock()
 	defer eb.mu.Unlock()
-	ch := make(chan ReactorEvent, 10)
+	ch := make(chan ReactorEvent, 16)
 	eb.channels[event] = ch
 	return ch
 }

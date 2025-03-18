@@ -229,12 +229,16 @@ func NewNodeWithContext(ctx context.Context,
 	// Add private IDs to addrbook to block those peers being added
 	addrBook.AddPrivateIDs(splitAndTrimEmpty(config.P2P.PrivatePeerIDs, ",", " "))
 
-	bus := types.NewReactorEventBus()
-	dvsReactor, err := security.CreateDVSReactor(*config.Pell, proxyApp, config.RootDir+"/data/security_store", dvsRequestIndexer, db, logger, privValidator, bus)
+	eventManager := security.NewEventManager()
+	dvsReactor, err := security.CreateDVSReactor(*config.Pell, proxyApp, config.RootDir+"/data/security_store", dvsRequestIndexer, db, logger, privValidator, eventManager)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create dvsReactor: %w", err)
 	}
-	aggregatorReactor := security.CreateAggregatorReactor(aggregator, logger, bus)
+	aggregatorReactor := security.CreateAggregatorReactor(aggregator, logger, eventManager)
+
+	eventManager.SetDVSReactor(&dvsReactor)
+	eventManager.SetAggregatorReactor(aggregatorReactor)
+	eventManager.StartListening()
 
 	node := &Node{
 		config:     config,

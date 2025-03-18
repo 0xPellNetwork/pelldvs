@@ -6,40 +6,41 @@ import (
 )
 
 type EventManager struct {
-	bus        *types.ReactorEventBus
-	aggregator *AggregatorReactor
-	dvs        *AggregatorReactor
+	eventBus          *types.ReactorEventBus
+	aggregatorReactor *AggregatorReactor
+	dvsReactor        *DVSReactor
 }
 
-func NewEventManager(
-	bus *types.ReactorEventBus,
-	aggregator *AggregatorReactor,
-	dvs *AggregatorReactor,
-) *EventManager {
-
+func NewEventManager() *EventManager {
 	return &EventManager{
-		bus:        bus,
-		aggregator: aggregator,
-		dvs:        dvs,
+		eventBus: types.NewReactorEventBus(),
 	}
+}
+
+func (em *EventManager) SetDVSReactor(dvsReactor *DVSReactor) {
+	em.dvsReactor = dvsReactor
+}
+
+func (em *EventManager) SetAggregatorReactor(aggregatorReactor *AggregatorReactor) {
+	em.aggregatorReactor = aggregatorReactor
 }
 
 func (em *EventManager) StartListening() {
 	go func() {
-		requestCh := em.bus.Subscribe(types.CollectResponseSignatureRequest)
-		responseCh := em.bus.Subscribe(types.CollectResponseSignatureDone)
+		requestCh := em.eventBus.Subscribe(types.CollectResponseSignatureRequest)
+		responseCh := em.eventBus.Subscribe(types.CollectResponseSignatureDone)
 
 		for {
 			select {
 			case event := <-requestCh:
 				if event == types.CollectResponseSignatureRequest {
 					fmt.Println("[EventManager] Received CollectResponseSignatureRequest, forwarding to Aggregator")
-					em.aggregator.HandleSignatureCollectionRequest()
+					em.aggregatorReactor.HandleSignatureCollectionRequest()
 				}
 			case event := <-responseCh:
 				if event == types.CollectResponseSignatureDone {
 					fmt.Println("[EventManager] Received CollectResponseSignatureDone, notifying DVS")
-					em.dvs.HandleSignatureCollectionRequest()
+					em.dvsReactor.HandleSignatureCollectionResponse()
 				}
 			}
 		}

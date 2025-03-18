@@ -7,24 +7,23 @@ import (
 )
 
 type AggregatorReactor struct {
-	aggregator aggtypes.Aggregator
-	logger     log.Logger
-	bus        *types.ReactorEventBus
+	aggregator   aggtypes.Aggregator
+	logger       log.Logger
+	eventManager *EventManager
 }
 
 func CreateAggregatorReactor(
 	aggregator aggtypes.Aggregator,
 	logger log.Logger,
-	bus *types.ReactorEventBus,
+	eventManager *EventManager,
 ) *AggregatorReactor {
-
 	return &AggregatorReactor{
-		aggregator: aggregator,
-		logger:     logger,
-		bus:        bus,
+		aggregator:   aggregator,
+		logger:       logger,
+		eventManager: eventManager,
 	}
 }
 
 func (ar *AggregatorReactor) HandleSignatureCollectionRequest() {
-	ar.bus.Publish(types.CollectResponseSignatureDone)
+	ar.eventManager.eventBus.Publish(types.CollectResponseSignatureDone)
 }

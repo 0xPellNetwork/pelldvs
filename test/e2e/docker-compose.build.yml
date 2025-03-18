@@ -9,7 +9,7 @@ services:
         HTTPS_PROXY: ${HTTPS_PROXY}
         GITHUB_TOKEN: ${GITHUB_TOKEN}
         DEBUG_ENABLED: ${DEBUG_ENABLED:-false}
-        EMULATOR_VERSION: ${EMULATOR_VERSION:-v0.1.4}
+        EMULATOR_VERSION: ${EMULATOR_VERSION:-v0.1.5}
       secrets:
         - github_token
   pelle2e:

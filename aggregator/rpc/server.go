@@ -303,6 +303,9 @@ func (ra *RPCServerAggregator) aggregateSignatures(task *Task) (*aggregator.Vali
 				selectedData = task.operatorResponses[operators[0]].Data
 				ra.Logger.Debug("Selected digest for aggregation checkIfStakeThresholdsMet", "digest", selectedDigest)
 				break
+			} else {
+				ra.Logger.Error("stake thresholds not met for digest", "digest", digest)
+				return nil, fmt.Errorf("stake thresholds not met for digest: %v", digest)
 			}
 		}
 	}

@@ -122,7 +122,7 @@ function stake_and_delegate_to_operator() {
   STRTEGY_MANAGER_ADDRESS=$(ssh hardhat "cat $HARDHAT_CONTRACTS_PATH/StrategyManager-Proxy.json" | jq -r .address)
   STBTC_STRATEGY_ADDRESS=$(ssh hardhat "cat $HARDHAT_CONTRACTS_PATH/stBTC-Strategy-Proxy.json" | jq -r .address)
 
-  STAKE_AMOUNT=3000000000000000000
+  STAKE_AMOUNT=1000000000000000000
 
   cast call $STBTC_ERC20_ADDRESS "balanceOf(address)(uint256)" $TestDeployerEvmAddr --rpc-url $ETH_RPC_URL
 

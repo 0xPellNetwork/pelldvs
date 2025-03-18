@@ -1,6 +1,7 @@
 #! /bin/bash
 
 set -e
+set -x
 
 logt() {
   echo "$(date '+%Y-%m-%d %H:%M:%S') $1"
@@ -116,9 +117,10 @@ function show_supported_chain() {
 function create_group {
   STBTC_STRATEGY_ADDRESS=$(ssh hardhat "cat $HARDHAT_CONTRACTS_PATH/stBTC-Strategy-Proxy.json" | jq -r .address)
   PBTC_STRATEGY_ADDRESS=$(ssh hardhat "cat $HARDHAT_CONTRACTS_PATH/pBTC-Strategy-Proxy.json" | jq -r .address)
+  STBTC_ERC20_ADDRESS=$(ssh hardhat "cat $HARDHAT_CONTRACTS_PATH/stBTC-TestnetMintableERC20.json" | jq -r .address)
   cat > ./group-0-config.json <<EOF
 {
-  "minimum_stake": 0,
+  "minimum_stake": 1,
   "pool_params": [
     {
       "chain_id": 1337,
@@ -129,6 +131,11 @@ function create_group {
       "chain_id": 1337,
       "multiplier": 1,
       "pool": "$PBTC_STRATEGY_ADDRESS"
+    },
+    {
+      "chain_id": 1337,
+      "multiplier": 1,
+      "pool": "$STBTC_ERC20_ADDRESS"
     }
   ],
   "operator_set_params": {
@@ -148,11 +155,11 @@ EOF
 }
 
 function show_group {
-  GROUP_COUNT=$(cast call "$REGISTRY_ROUTER_ADDRESS" "groupCount()" --rpc-url "$ETH_RPC_URL")
+  GROUP_COUNT=$(cast call "$REGISTRY_ROUTER_ADDRESS" "groupCount()" --rpc-url $ETH_RPC_URL)
   logt "Group Count From Registry Router in Pell EVM: $GROUP_COUNT"
 
   DVS_CENTRAL_SCHEDULER=$(ssh hardhat "cat $HARDHAT_DVS_PATH/CentralScheduler-Proxy.json" | jq -r .address)
-  GROUP_COUNT=$(cast call "$DVS_CENTRAL_SCHEDULER" "groupCount()" --rpc-url "$ETH_RPC_URL")
+  GROUP_COUNT=$(cast call "$DVS_CENTRAL_SCHEDULER" "groupCount()" --rpc-url $ETH_RPC_URL)
   logt "Group Count From Registry CentralScheduler in Service EVM: $GROUP_COUNT"
 }
 

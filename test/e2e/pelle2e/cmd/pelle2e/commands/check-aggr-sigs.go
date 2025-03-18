@@ -25,7 +25,7 @@ var CheckBLSAggrSigCmdFlagGroupNumber = &chainflags.IntFlag{
 var CheckBLSAggrSigCmdFlagThreshold = &chainflags.IntFlag{
 	Name:    "threshold",
 	Usage:   "Threshold",
-	Default: 2,
+	Default: 60,
 }
 
 var CheckBLSAggrSigCmdFlagDVSServiceManagerAddress = &chainflags.StringFlag{

@@ -11,6 +11,7 @@ import (
 
 	"github.com/0xPellNetwork/pelldvs-interactor/types"
 	"github.com/0xPellNetwork/pelldvs-libs/crypto/ecdsa"
+	"github.com/0xPellNetwork/pelldvs-libs/log"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/chains/chainflags"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/chains/chainutils"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/client/utils"
@@ -86,6 +87,7 @@ func handleModifyOperatorDetails(
 	stakerOptoutWindowSeconds string,
 	delegationApproverAddress string,
 ) error {
+	logger := getCmdLogger(cmd)
 	optSeconds, err := chainutils.ConvStrToUint32(stakerOptoutWindowSeconds)
 	if err != nil {
 		return fmt.Errorf("failed to convert staker optout window seconds to uint32: %v", err)
@@ -113,7 +115,7 @@ func handleModifyOperatorDetails(
 		operator.MetadataURL = chainflags.MetadataURI.Value
 	}
 
-	receipt, err := execModifyOperatorDetails(cmd, kpath.ECDSA, operator)
+	receipt, err := execModifyOperatorDetails(cmd, logger, kpath.ECDSA, operator)
 	if err != nil {
 		return fmt.Errorf("failed: %v", err)
 	}
@@ -123,7 +125,7 @@ func handleModifyOperatorDetails(
 	return err
 }
 
-func execModifyOperatorDetails(cmd *cobra.Command, privKeyPath string, operator types.Operator) (*gethtypes.Receipt, error) {
+func execModifyOperatorDetails(cmd *cobra.Command, logger log.Logger, privKeyPath string, operator types.Operator) (*gethtypes.Receipt, error) {
 	logger.Info(
 		utils.GetPrettyCommandName(cmd),
 		"privKeyPath", privKeyPath,

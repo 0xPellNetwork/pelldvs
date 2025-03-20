@@ -12,6 +12,7 @@ import (
 
 	chaintypes "github.com/0xPellNetwork/pelldvs-interactor/types"
 	"github.com/0xPellNetwork/pelldvs-libs/crypto/ecdsa"
+	"github.com/0xPellNetwork/pelldvs-libs/log"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/chains/chainflags"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/client/utils"
 	pellcfg "github.com/0xPellNetwork/pelldvs/config"
@@ -135,6 +136,7 @@ func parseBoolValueFromString(s string) bool {
 }
 
 func handleCreateRegistryRouter(cmd *cobra.Command) error {
+	logger := getCmdLogger(cmd)
 	kpath := keys.GetKeysPath(pellcfg.CmtConfig, chainflags.FromKeyNameFlag.Value)
 	if !kpath.IsECDSAExist() {
 		return fmt.Errorf("ECDSA key does not exist %s", kpath.ECDSA)
@@ -163,7 +165,7 @@ func handleCreateRegistryRouter(cmd *cobra.Command) error {
 		createRegistryRouterParam.InitialPausedStatus = big.NewInt(1)
 	}
 
-	res, err := execCreateRegistryRouter(cmd, createRegistryRouterParam, kpath.ECDSA)
+	res, err := execCreateRegistryRouter(cmd, logger, createRegistryRouterParam, kpath.ECDSA)
 	if err != nil {
 		return fmt.Errorf("failed: %v", err)
 	}
@@ -190,6 +192,7 @@ func handleCreateRegistryRouter(cmd *cobra.Command) error {
 }
 
 func execCreateRegistryRouter(cmd *cobra.Command,
+	logger log.Logger,
 	params *chaintypes.CreateRegistryRouterRequest,
 	privKeyPath string,
 ) (*chaintypes.CreateRegistryRouterResponse, error) {

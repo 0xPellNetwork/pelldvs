@@ -403,4 +403,11 @@ lint-imports:
 		goimports-reviser -rm-unused -format "$$file"; \
 	done
 
-pre-commit: lint lint-imports test vulncheck
+pre-commit:
+	@echo "--> Running pre-commit hooks, lint-imports, lint, vulncheck, test"
+	@echo -e "\n\n"
+	make lint-imports
+	make lint
+	make vulncheck
+	make test
+	@echo -e "\n\n"

@@ -9,6 +9,7 @@ import (
 
 	chaintypes "github.com/0xPellNetwork/pelldvs-interactor/types"
 	"github.com/0xPellNetwork/pelldvs-libs/crypto/ecdsa"
+	"github.com/0xPellNetwork/pelldvs-libs/log"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/chains/chainflags"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/client/utils"
 	pellcfg "github.com/0xPellNetwork/pelldvs/config"
@@ -57,6 +58,7 @@ pelldvs client dvs create-group \
 }
 
 func handleCreateGroup(cmd *cobra.Command) error {
+	logger := getCmdLogger(cmd)
 	kpath := keys.GetKeysPath(pellcfg.CmtConfig, chainflags.FromKeyNameFlag.Value)
 	if !kpath.IsECDSAExist() {
 		return fmt.Errorf("ECDSA key does not exist %s", kpath.ECDSA)
@@ -72,7 +74,7 @@ func handleCreateGroup(cmd *cobra.Command) error {
 		return fmt.Errorf("failed to unmarshal createGroupParam: %v", err)
 	}
 
-	receipt, err := execCreateGroup(cmd, createGroupParam, kpath.ECDSA)
+	receipt, err := execCreateGroup(cmd, logger, createGroupParam, kpath.ECDSA)
 	if err != nil {
 		return fmt.Errorf("failed: %v", err)
 	}
@@ -82,7 +84,7 @@ func handleCreateGroup(cmd *cobra.Command) error {
 	return err
 }
 
-func execCreateGroup(cmd *cobra.Command, params chaintypes.CreateGroupRequest, privKeyPath string) (*gethtypes.Receipt, error) {
+func execCreateGroup(cmd *cobra.Command, logger log.Logger, params chaintypes.CreateGroupRequest, privKeyPath string) (*gethtypes.Receipt, error) {
 	cmdName := utils.GetPrettyCommandName(cmd)
 	logger.Info(fmt.Sprintf("%s start", cmdName),
 		"privKeyPath", privKeyPath,

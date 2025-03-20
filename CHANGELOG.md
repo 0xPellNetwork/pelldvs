@@ -6,7 +6,7 @@
 
 (feat) [#10](https://github.com/0xPellNetwork/pelldvs/pull/10) feat(rpc): allow querying by dvs.height 
 (feat) [#14](https://github.com/0xPellNetwork/pelldvs/pull/14) refactor: use interactor reader instead of aggregator interactor
-(feat) [#15](https://github.com/0xPellNetwork/pelldvs/pull/16) feat: add `client operator get-weight-for-group` cmd for getting weight for group.
+(feat) [#16](https://github.com/0xPellNetwork/pelldvs/pull/16) feat: add `client operator get-weight-for-group` cmd for getting weight for group.
 
 ### Improvements
 

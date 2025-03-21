@@ -242,7 +242,7 @@ func NewNodeWithContext(ctx context.Context,
 	}
 
 	// Create the event manager
-	eventManager := security.NewEventManager()
+	eventManager := security.NewEventManager(logger)
 
 	// Create the DVS and Aggregator reactors
 	dvsReactor, err := security.CreateDVSReactor(*config.Pell, proxyApp, dvsRequestIndexer, db, dvsState, logger, eventManager)

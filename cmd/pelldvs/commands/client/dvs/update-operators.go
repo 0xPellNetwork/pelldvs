@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/0xPellNetwork/pelldvs-libs/crypto/ecdsa"
+	"github.com/0xPellNetwork/pelldvs-libs/log"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/chains/chainflags"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/client/utils"
 	pellcfg "github.com/0xPellNetwork/pelldvs/config"
@@ -51,6 +52,7 @@ pelldvs client dvs update-operators \
 }
 
 func handleUpdateOperators(cmd *cobra.Command, operators string) error {
+	logger := getCmdLogger(cmd)
 	operators = strings.TrimSpace(operators)
 	operatorsList := strings.Split(operators, ",")
 
@@ -81,7 +83,7 @@ func handleUpdateOperators(cmd *cobra.Command, operators string) error {
 		return fmt.Errorf("ECDSA key does not exist %s", kpath.ECDSA)
 	}
 
-	receipt, err := execUpdateOperators(cmd, kpath.ECDSA, addresses)
+	receipt, err := execUpdateOperators(cmd, logger, kpath.ECDSA, addresses)
 	if err != nil {
 		return fmt.Errorf("failed: %v", err)
 	}
@@ -91,7 +93,7 @@ func handleUpdateOperators(cmd *cobra.Command, operators string) error {
 	return err
 }
 
-func execUpdateOperators(cmd *cobra.Command, privKeyPath string, addresses []string) (*gethtypes.Receipt, error) {
+func execUpdateOperators(cmd *cobra.Command, logger log.Logger, privKeyPath string, addresses []string) (*gethtypes.Receipt, error) {
 	logger.Info(
 		utils.GetPrettyCommandName(cmd),
 		"privKeyPath", privKeyPath,

@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/0xPellNetwork/pelldvs-libs/crypto/ecdsa"
+	"github.com/0xPellNetwork/pelldvs-libs/log"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/chains/chainflags"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/client/utils"
 	pellcfg "github.com/0xPellNetwork/pelldvs/config"
@@ -41,12 +42,13 @@ pelldvs client operator update-socket \
 }
 
 func handleUpdateSocket(cmd *cobra.Command, socket string) error {
+	logger := getCmdLogger(cmd)
 	kpath := keys.GetKeysPath(pellcfg.CmtConfig, chainflags.FromKeyNameFlag.Value)
 	if !kpath.IsECDSAExist() {
 		return fmt.Errorf("ECDSA key does not exist %s", kpath.ECDSA)
 	}
 
-	receipt, err := execUpdateSocket(cmd, kpath.ECDSA, socket)
+	receipt, err := execUpdateSocket(cmd, logger, kpath.ECDSA, socket)
 	if err != nil {
 		return fmt.Errorf("failed: %v", err)
 	}
@@ -56,7 +58,7 @@ func handleUpdateSocket(cmd *cobra.Command, socket string) error {
 	return err
 }
 
-func execUpdateSocket(cmd *cobra.Command, privKeyPath string, uri string) (*gethtypes.Receipt, error) {
+func execUpdateSocket(cmd *cobra.Command, logger log.Logger, privKeyPath string, uri string) (*gethtypes.Receipt, error) {
 	logger.Info(
 		utils.GetPrettyCommandName(cmd),
 		"privKeyPath", privKeyPath,

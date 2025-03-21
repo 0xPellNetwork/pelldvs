@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/0xPellNetwork/pelldvs-libs/crypto/ecdsa"
+	"github.com/0xPellNetwork/pelldvs-libs/log"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/chains/chainflags"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/client/utils"
 	pellcfg "github.com/0xPellNetwork/pelldvs/config"
@@ -42,12 +43,13 @@ pelldvs client operator update-metadata-uri \
 }
 
 func handleUpdateOperatorMetadataURI(cmd *cobra.Command, uri string) error {
+	logger := getCmdLogger(cmd)
 	kpath := keys.GetKeysPath(pellcfg.CmtConfig, chainflags.FromKeyNameFlag.Value)
 	if !kpath.IsECDSAExist() {
 		return fmt.Errorf("ECDSA key does not exist %s", kpath.ECDSA)
 	}
 
-	receipt, err := execUpdateOperatorMetadataURI(cmd, kpath.ECDSA, uri)
+	receipt, err := execUpdateOperatorMetadataURI(cmd, logger, kpath.ECDSA, uri)
 	if err != nil {
 		return fmt.Errorf("failed: %v", err)
 	}
@@ -57,7 +59,7 @@ func handleUpdateOperatorMetadataURI(cmd *cobra.Command, uri string) error {
 	return err
 }
 
-func execUpdateOperatorMetadataURI(cmd *cobra.Command, privKeyPath string, uri string) (*gethtypes.Receipt, error) {
+func execUpdateOperatorMetadataURI(cmd *cobra.Command, logger log.Logger, privKeyPath string, uri string) (*gethtypes.Receipt, error) {
 	logger.Info(
 		utils.GetPrettyCommandName(cmd),
 		"privKeyPath", privKeyPath,

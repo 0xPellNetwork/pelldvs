@@ -7,9 +7,14 @@ import (
 
 	"github.com/0xPellNetwork/pelldvs-libs/log"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/chains/chainflags"
+	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/client/utils"
 )
 
-var logger = log.NewLogger(os.Stdout).With("cmd", "client/dvs")
+var rootLogger = log.NewLogger(os.Stdout).With("cmd", "client/dvs")
+
+func getCmdLogger(cmd *cobra.Command) log.Logger {
+	return rootLogger.With("cmd", utils.GetPrettyCommandName(cmd))
+}
 
 var DvsCmd = &cobra.Command{
 	Use:   "dvs",

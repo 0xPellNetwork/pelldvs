@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/0xPellNetwork/pelldvs-libs/crypto/ecdsa"
+	"github.com/0xPellNetwork/pelldvs-libs/log"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/chains/chainflags"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/client/utils"
 	pellcfg "github.com/0xPellNetwork/pelldvs/config"
@@ -47,6 +48,7 @@ pelldvs client dvs set-ejector \
 }
 
 func handleSetEjector(cmd *cobra.Command, ejector string) error {
+	logger := getCmdLogger(cmd)
 	if !gethcommon.IsHexAddress(ejector) {
 		return fmt.Errorf("invalid address %s", ejector)
 	}
@@ -56,7 +58,7 @@ func handleSetEjector(cmd *cobra.Command, ejector string) error {
 		return fmt.Errorf("ECDSA key does not exist %s", kpath.ECDSA)
 	}
 
-	receipt, err := execSetEjector(cmd, kpath.ECDSA, ejector)
+	receipt, err := execSetEjector(cmd, logger, kpath.ECDSA, ejector)
 	if err != nil {
 		return fmt.Errorf("failed: %v", err)
 	}
@@ -66,7 +68,7 @@ func handleSetEjector(cmd *cobra.Command, ejector string) error {
 	return err
 }
 
-func execSetEjector(cmd *cobra.Command, privKeyPath string, ejector string) (*gethtypes.Receipt, error) {
+func execSetEjector(cmd *cobra.Command, logger log.Logger, privKeyPath string, ejector string) (*gethtypes.Receipt, error) {
 	cmdName := utils.GetPrettyCommandName(cmd)
 	logger.Info(cmdName,
 		"privKeyPath", privKeyPath,

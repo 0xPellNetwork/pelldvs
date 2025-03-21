@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/0xPellNetwork/pelldvs-libs/crypto/ecdsa"
+	"github.com/0xPellNetwork/pelldvs-libs/log"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/chains/chainflags"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/chains/chainutils"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/client/utils"
@@ -42,6 +43,7 @@ pelldvs client operator deregister-operator \
 }
 
 func handleDeRegisterOperator(cmd *cobra.Command, groupNumbersStr string) error {
+	logger := getCmdLogger(cmd)
 	groupNumbers := chainutils.ConvStrsToUint8List(groupNumbersStr)
 	if len(groupNumbers) == 0 {
 		return fmt.Errorf("invalid group numbers %s", groupNumbersStr)
@@ -51,7 +53,7 @@ func handleDeRegisterOperator(cmd *cobra.Command, groupNumbersStr string) error 
 		return fmt.Errorf("ECDSA key does not exist %s", kpath.ECDSA)
 	}
 
-	receipt, err := execDeRegisterOperator(cmd, kpath.ECDSA, groupNumbers)
+	receipt, err := execDeRegisterOperator(cmd, logger, kpath.ECDSA, groupNumbers)
 	if err != nil {
 		return fmt.Errorf("failed: %v", err)
 	}
@@ -61,7 +63,7 @@ func handleDeRegisterOperator(cmd *cobra.Command, groupNumbersStr string) error 
 	return err
 }
 
-func execDeRegisterOperator(cmd *cobra.Command, privKeyPath string, groupNumbers []byte) (*gethtypes.Receipt, error) {
+func execDeRegisterOperator(cmd *cobra.Command, logger log.Logger, privKeyPath string, groupNumbers []byte) (*gethtypes.Receipt, error) {
 	logger.Info(
 		utils.GetPrettyCommandName(cmd),
 		"privKeyPath", privKeyPath,

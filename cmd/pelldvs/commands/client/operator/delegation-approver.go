@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/spf13/cobra"
 
+	"github.com/0xPellNetwork/pelldvs-libs/log"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/client/utils"
 	pellcfg "github.com/0xPellNetwork/pelldvs/config"
 )
@@ -40,7 +41,8 @@ pelldvs query operator delegation-approver \
 }
 
 func handleDelegationApprover(cmd *cobra.Command, operatorAddr string) error {
-	result, err := execDelegationApprover(cmd, operatorAddr)
+	logger := getCmdLogger(cmd)
+	result, err := execDelegationApprover(cmd, logger, operatorAddr)
 	if err != nil {
 		return fmt.Errorf("failed to create group: %v", err)
 	}
@@ -57,7 +59,7 @@ func handleDelegationApprover(cmd *cobra.Command, operatorAddr string) error {
 	return err
 }
 
-func execDelegationApprover(cmd *cobra.Command, operator string) (string, error) {
+func execDelegationApprover(cmd *cobra.Command, logger log.Logger, operator string) (string, error) {
 	logger.Info(
 		utils.GetPrettyCommandName(cmd),
 		"operator", operator,

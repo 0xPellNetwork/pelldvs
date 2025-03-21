@@ -11,48 +11,26 @@ import (
 	"github.com/0xPellNetwork/pelldvs-interactor/chainlibs/eth"
 	chaincfg "github.com/0xPellNetwork/pelldvs-interactor/config"
 	"github.com/0xPellNetwork/pelldvs-libs/crypto/ecdsa"
+	"github.com/0xPellNetwork/pelldvs-libs/log"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/chains/chainflags"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/client/utils"
 	pellcfg "github.com/0xPellNetwork/pelldvs/config"
 	"github.com/0xPellNetwork/pelldvs/pkg/keys"
 )
 
-var (
-	addSupportedChainCmdFlagCentralScheduler = &chainflags.StringFlag{
-		Name:  "central-scheduler",
-		Usage: "central scheduler address",
-	}
-	addSupportedChainCmdFlagEjectionManager = &chainflags.StringFlag{
-		Name:  "ejection-manager",
-		Usage: "ejection manager address",
-	}
-	addSupportedChainCmdFlagStakeRegistry = &chainflags.StringFlag{
-		Name:  "stake-registry",
-		Usage: "stake registry address",
-	}
-	addSupportedChainCmdFlagDVSRPCURL = &chainflags.StringFlag{
-		Name:  "dvs-rpc-url",
-		Usage: "dvs rpc url",
-	}
-	addSupportedChainCmdFlagApproverKeyName = &chainflags.StringFlag{
-		Name:  "approver-key-name",
-		Usage: "approver key name",
-	}
-)
-
 func init() {
-	addSupportedChainCmdFlagCentralScheduler.AddToCmdFlag(addSupportedChainCmd)
-	addSupportedChainCmdFlagEjectionManager.AddToCmdFlag(addSupportedChainCmd)
-	addSupportedChainCmdFlagStakeRegistry.AddToCmdFlag(addSupportedChainCmd)
-	addSupportedChainCmdFlagDVSRPCURL.AddToCmdFlag(addSupportedChainCmd)
-	addSupportedChainCmdFlagApproverKeyName.AddToCmdFlag(addSupportedChainCmd)
+	chainflags.DVSCentralSchedulerAddress.AddToCmdFlag(addSupportedChainCmd)
+	chainflags.DVSEjectionManagerAddress.AddToCmdFlag(addSupportedChainCmd)
+	chainflags.DVSOperatorStakeManagerAddress.AddToCmdFlag(addSupportedChainCmd)
+	chainflags.DVSRPCURL.AddToCmdFlag(addSupportedChainCmd)
+	chainflags.DVSApproverKeyName.AddToCmdFlag(addSupportedChainCmd)
 
 	err := chainflags.MarkFlagsAreRequired(addSupportedChainCmd,
-		addSupportedChainCmdFlagCentralScheduler,
-		addSupportedChainCmdFlagEjectionManager,
-		addSupportedChainCmdFlagStakeRegistry,
-		addSupportedChainCmdFlagDVSRPCURL,
-		addSupportedChainCmdFlagApproverKeyName,
+		chainflags.DVSCentralSchedulerAddress,
+		chainflags.DVSEjectionManagerAddress,
+		chainflags.DVSOperatorStakeManagerAddress,
+		chainflags.DVSRPCURL,
+		chainflags.DVSApproverKeyName,
 	)
 	if err != nil {
 		panic(err)
@@ -80,12 +58,13 @@ pelldvs client dvs add-supported-chain \
 }
 
 func handleAddSupportedChain(cmd *cobra.Command) error {
+	logger := getCmdLogger(cmd)
 	kpath := keys.GetKeysPath(pellcfg.CmtConfig, chainflags.FromKeyNameFlag.Value)
 	if !kpath.IsECDSAExist() {
 		return fmt.Errorf("ECDSA key does not exist %s", kpath.ECDSA)
 	}
 
-	appRoverKeyPath := keys.GetKeysPath(pellcfg.CmtConfig, addSupportedChainCmdFlagApproverKeyName.Value)
+	appRoverKeyPath := keys.GetKeysPath(pellcfg.CmtConfig, chainflags.DVSApproverKeyName.Value)
 	if !kpath.IsECDSAExist() {
 		return fmt.Errorf("ECDSA key does not exist %s", appRoverKeyPath.ECDSA)
 	}
@@ -95,19 +74,19 @@ func handleAddSupportedChain(cmd *cobra.Command) error {
 		return fmt.Errorf("failed to read approverPkPair ecdsa key: %v", err)
 	}
 
-	dvsETHClient, err := eth.NewClient(addSupportedChainCmdFlagDVSRPCURL.Value)
+	dvsETHClient, err := eth.NewClient(chainflags.DVSRPCURL.Value)
 	if err != nil {
 		return fmt.Errorf("failed to create eth client for RPCURL: %s:, err %v",
-			registerChainToPellCmdFlagDVSRPCURL.Value, err,
+			chainflags.DVSRPCURL.Value, err,
 		)
 	}
 	dvsChainID, err := dvsETHClient.ChainID(cmd.Context())
 	if err != nil {
 		return fmt.Errorf("failed to get chain id from rpc client: url:%s , error: %v",
-			registerChainToPellCmdFlagDVSRPCURL.Value, err)
+			chainflags.DVSRPCURL.Value, err)
 	}
 
-	receipt, err := execAddSupportedChain(cmd, dvsChainID.Uint64(), kpath.ECDSA, approverPkPair)
+	receipt, err := execAddSupportedChain(cmd, logger, dvsChainID.Uint64(), kpath.ECDSA, approverPkPair)
 	if err != nil {
 		return fmt.Errorf("failed: %v", err)
 	}
@@ -117,10 +96,8 @@ func handleAddSupportedChain(cmd *cobra.Command) error {
 	return err
 }
 
-func execAddSupportedChain(cmd *cobra.Command, dvsChainID uint64, privKeyPath string, approverPK *osecdsa.PrivateKey) (*gethtypes.Receipt, error) {
-	cmdName := utils.GetPrettyCommandName(cmd)
-
-	logger.Info(fmt.Sprintf("%s start", cmdName),
+func execAddSupportedChain(cmd *cobra.Command, logger log.Logger, dvsChainID uint64, privKeyPath string, approverPK *osecdsa.PrivateKey) (*gethtypes.Receipt, error) {
+	logger.Info("exec start",
 		"privKeyPath", privKeyPath,
 		"chainId", dvsChainID,
 	)
@@ -130,9 +107,6 @@ func execAddSupportedChain(cmd *cobra.Command, dvsChainID uint64, privKeyPath st
 	if err != nil {
 		return nil, fmt.Errorf("failed to get senderAddress from key store file: %v", err)
 	}
-	logger.Info(cmdName,
-		"sender", senderAddress,
-	)
 
 	cfg, err := utils.LoadChainConfig(cmd, pellcfg.CmtConfig.Pell.InteractorConfigPath, logger)
 	if err != nil {
@@ -147,17 +121,17 @@ func execAddSupportedChain(cmd *cobra.Command, dvsChainID uint64, privKeyPath st
 		cfg.ContractConfig.DVSConfigs[dvsChainID] = &chaincfg.DVSConfig{}
 	}
 
-	if addSupportedChainCmdFlagCentralScheduler.Value != "" {
-		cfg.ContractConfig.DVSConfigs[dvsChainID].CentralScheduler = addSupportedChainCmdFlagCentralScheduler.Value
+	if chainflags.DVSCentralSchedulerAddress.Value != "" {
+		cfg.ContractConfig.DVSConfigs[dvsChainID].CentralScheduler = chainflags.DVSCentralSchedulerAddress.Value
 	}
-	if addSupportedChainCmdFlagEjectionManager.Value != "" {
-		cfg.ContractConfig.DVSConfigs[dvsChainID].EjectionManager = addSupportedChainCmdFlagEjectionManager.Value
+	if chainflags.DVSEjectionManagerAddress.Value != "" {
+		cfg.ContractConfig.DVSConfigs[dvsChainID].EjectionManager = chainflags.DVSEjectionManagerAddress.Value
 	}
-	if addSupportedChainCmdFlagStakeRegistry.Value != "" {
-		cfg.ContractConfig.DVSConfigs[dvsChainID].OperatorStakeManager = addSupportedChainCmdFlagStakeRegistry.Value
+	if chainflags.DVSOperatorStakeManagerAddress.Value != "" {
+		cfg.ContractConfig.DVSConfigs[dvsChainID].OperatorStakeManager = chainflags.DVSOperatorStakeManagerAddress.Value
 	}
-	if addSupportedChainCmdFlagDVSRPCURL.Value != "" {
-		cfg.ContractConfig.DVSConfigs[dvsChainID].RPCURL = addSupportedChainCmdFlagDVSRPCURL.Value
+	if chainflags.DVSRPCURL.Value != "" {
+		cfg.ContractConfig.DVSConfigs[dvsChainID].RPCURL = chainflags.DVSRPCURL.Value
 	}
 
 	logger.Info("chain config details", "chaincfg", fmt.Sprintf("%+v", cfg))
@@ -190,7 +164,7 @@ func execAddSupportedChain(cmd *cobra.Command, dvsChainID uint64, privKeyPath st
 	}
 
 	logger.Info(
-		fmt.Sprintf("%s done", cmdName),
+		"exec down",
 		"k", "v",
 		"senderAddress", senderAddress,
 		"receipt", receipt,

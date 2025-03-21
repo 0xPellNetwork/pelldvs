@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/0xPellNetwork/pelldvs-libs/crypto/ecdsa"
+	"github.com/0xPellNetwork/pelldvs-libs/log"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/chains/chainflags"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/chains/chainutils"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/client/utils"
@@ -48,12 +49,13 @@ pelldvs client dvs set-minimum-stake-for-group \
 }
 
 func handleSetMinimumStakeForGroup(cmd *cobra.Command, groupNumber uint8, minimumStake uint64) error {
+	logger := getCmdLogger(cmd)
 	kpath := keys.GetKeysPath(pellcfg.CmtConfig, chainflags.FromKeyNameFlag.Value)
 	if !kpath.IsECDSAExist() {
 		return fmt.Errorf("ECDSA key does not exist %s", kpath.ECDSA)
 	}
 
-	receipt, err := execSetMinimumStakeForGroup(cmd, kpath.ECDSA, groupNumber, minimumStake)
+	receipt, err := execSetMinimumStakeForGroup(cmd, logger, kpath.ECDSA, groupNumber, minimumStake)
 	if err != nil {
 		return fmt.Errorf("failed to handleSetMinimumStakeForGroup: %v", err)
 	}
@@ -63,7 +65,7 @@ func handleSetMinimumStakeForGroup(cmd *cobra.Command, groupNumber uint8, minimu
 	return err
 }
 
-func execSetMinimumStakeForGroup(cmd *cobra.Command, privKeyPath string, groupNumber uint8, minimumStake uint64) (*gethtypes.Receipt, error) {
+func execSetMinimumStakeForGroup(cmd *cobra.Command, logger log.Logger, privKeyPath string, groupNumber uint8, minimumStake uint64) (*gethtypes.Receipt, error) {
 	logger.Info(
 		utils.GetPrettyCommandName(cmd),
 		"groupNumber", groupNumber,

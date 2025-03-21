@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/0xPellNetwork/pelldvs-libs/crypto/ecdsa"
+	"github.com/0xPellNetwork/pelldvs-libs/log"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/chains/chainflags"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/client/utils"
 	pellcfg "github.com/0xPellNetwork/pelldvs/config"
@@ -55,12 +56,13 @@ pelldvs client dvs update-dvs-metadata-uri \
 }
 
 func handleUpdateDVSMetadataURI(cmd *cobra.Command, keyName string, uri string) error {
+	logger := getCmdLogger(cmd)
 	kpath := keys.GetKeysPath(pellcfg.CmtConfig, keyName)
 	if !kpath.IsECDSAExist() {
 		return fmt.Errorf("ECDSA key does not exist %s", kpath.ECDSA)
 	}
 
-	receipt, err := execUpdateDVSMetadataURI(cmd, kpath.ECDSA, uri)
+	receipt, err := execUpdateDVSMetadataURI(cmd, logger, kpath.ECDSA, uri)
 	if err != nil {
 		return fmt.Errorf("failed: %v", err)
 	}
@@ -70,7 +72,7 @@ func handleUpdateDVSMetadataURI(cmd *cobra.Command, keyName string, uri string) 
 	return err
 }
 
-func execUpdateDVSMetadataURI(cmd *cobra.Command, privKeyPath string, uri string) (*gethtypes.Receipt, error) {
+func execUpdateDVSMetadataURI(cmd *cobra.Command, logger log.Logger, privKeyPath string, uri string) (*gethtypes.Receipt, error) {
 	logger.Info(
 		utils.GetPrettyCommandName(cmd),
 		"privKeyPath", privKeyPath,

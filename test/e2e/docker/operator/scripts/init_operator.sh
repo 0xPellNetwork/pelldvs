@@ -196,22 +196,20 @@ function stake_and_delegate_to_operator() {
     0 \
     --rpc-url $ETH_RPC_URL
 
+  logt ""
   logt "Query weight of operator from Pell Chain and Service Chain"
 
   OPERATOR_STAKE_MNAGER=$(ssh hardhat "cat $HARDHAT_DVS_PATH/OperatorStakeManager-Proxy.json" | jq -r .address)
 
-  cast call $STAKE_REGISTRY_ROUTER \
-    "weightOfOperatorForGroup(uint8,address)(uint96)" \
-    0 $OPERATOR_ADDRESS \
-    --rpc-url $ETH_RPC_URL
+  pelldvs client operator get-weight-for-group \
+    --home $PELLDVS_HOME \
+    --dvs-rpc-url $SERVICE_CHAIN_RPC_URL \
+    --dvs-operator-stake-manager $OPERATOR_STAKE_MNAGER \
+    --rpc-url $ETH_RPC_URL \
+    --registry-router $REGISTRY_ROUTER_ADDRESS \
+    0 $OPERATOR_ADDRESS
 
-  sleep 5
-
-  cast call $OPERATOR_STAKE_MNAGER \
-    "weightOfOperatorForGroup(uint8,address)(uint96)" \
-    0 $OPERATOR_ADDRESS \
-    --rpc-url $ETH_RPC_URL
-
+  logt ""
   logt "Delegate to Operator Done"
 }
 

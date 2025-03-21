@@ -7,9 +7,14 @@ import (
 
 	"github.com/0xPellNetwork/pelldvs-libs/log"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/chains/chainflags"
+	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/client/utils"
 )
 
-var logger = log.NewLogger(os.Stdout).With("cmd", "client/operator")
+var rootLogger = log.NewLogger(os.Stdout).With("cmd", "client/operator")
+
+func getCmdLogger(cmd *cobra.Command) log.Logger {
+	return rootLogger.With("cmd", utils.GetPrettyCommandName(cmd))
+}
 
 var OperatorCmd = &cobra.Command{
 	Use:     "operator",
@@ -40,4 +45,5 @@ func init() {
 	OperatorCmd.AddCommand(isOperatorCmd)
 	OperatorCmd.AddCommand(operatorDetailsCmd)
 	OperatorCmd.AddCommand(registerOperatorCmd)
+	OperatorCmd.AddCommand(getWeightForGroupCmd)
 }

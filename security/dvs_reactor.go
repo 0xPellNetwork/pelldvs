@@ -78,27 +78,6 @@ func (dvs *DVSReactor) SaveDVSRequestResult(res *avsitypes.DVSRequestResult, fir
 	return dvs.dvsRequestIndexer.Index(res)
 }
 
-func (dvs *DVSReactor) QueryRequestResult(res *avsitypes.DVSRequest) (*avsitypes.DVSRequestResult, error) {
-	rawBytesDvsRequest, err := proto.Marshal(res)
-	if err != nil {
-		return nil, err
-	}
-	hashAsBytes := types.DvsRequest(rawBytesDvsRequest).Hash()
-	r, err := dvs.dvsRequestIndexer.Get(hashAsBytes)
-	if err != nil {
-		return nil, err
-	}
-	if r == nil {
-		return nil, fmt.Errorf("dvs (%X) not found", string(hashAsBytes))
-	}
-	return &avsitypes.DVSRequestResult{
-		DvsRequest:                 r.DvsRequest,
-		DvsResponse:                r.DvsResponse,
-		ResponseProcessDvsRequest:  r.ResponseProcessDvsRequest,
-		ResponseProcessDvsResponse: r.ResponseProcessDvsResponse,
-	}, nil
-}
-
 func (dvs *DVSReactor) HandleDVSRequest(request avsitypes.DVSRequest) error {
 	dvs.logger.Info("dvsReactor.HandleDVSRequest", "request", request)
 

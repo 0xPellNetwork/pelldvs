@@ -3,8 +3,8 @@ package rpc
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/gob"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"math/big"
 	"net"
@@ -46,6 +46,9 @@ func NewRPCServerAggregator(
 	aggConfig *aggregator.AggregatorConfig,
 	logger log.Logger,
 ) (*RPCServerAggregator, error) {
+	// Register AggregatorError type for gob encoding
+	gob.Register(&aggregator.AggregatorError{})
+
 	db, err := DefaultDBProvider(&DBContext{
 		ID:     "indexer",
 		Config: cfg,
@@ -273,7 +276,7 @@ func (ra *RPCServerAggregator) createErrorValidatedResponse(taskID string, err e
 func (ra *RPCServerAggregator) aggregateSignatures(task *Task) (*aggregator.ValidatedResponse, error) {
 	ra.Logger.Info("aggregateSignatures.start", "taskID", task.taskID)
 	if len(task.operatorResponses) == 0 {
-		return nil, errors.New("no signatures to aggregate")
+		return nil, aggregator.NewNoSignaturesError()
 	}
 
 	totalStakePerGroup := make(map[types.GroupNumber]*big.Int)
@@ -305,7 +308,7 @@ func (ra *RPCServerAggregator) aggregateSignatures(task *Task) (*aggregator.Vali
 				break
 			} else {
 				ra.Logger.Error("stake thresholds not met for digest", "digest", digest)
-				return nil, fmt.Errorf("stake thresholds not met for digest: %v", digest)
+				return nil, aggregator.NewStakeThresholdsNotMetError(digest)
 			}
 		}
 	}
@@ -343,7 +346,7 @@ func (ra *RPCServerAggregator) aggregateSignatures(task *Task) (*aggregator.Vali
 			addrOperatorID := operator.OperatorID
 			operatorInfo, err := ra.dvsReader.GetOperatorInfoByID(addrOperatorID)
 			if err != nil {
-				return nil, fmt.Errorf("failed to get operator info by ID: %v", err)
+				return nil, aggregator.NewOperatorInfoNotFoundError(err)
 			}
 			registeredOperators[addrOperatorID] = operatorInfo
 
@@ -395,7 +398,7 @@ func (ra *RPCServerAggregator) aggregateSignatures(task *Task) (*aggregator.Vali
 		nonSignersOperatorIds,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get check signatures indices: %v", err)
+		return nil, aggregator.NewInvalidIndicesError(err)
 	}
 	ra.Logger.Debug("aggregateSignatures.indices", "indices", indices)
 

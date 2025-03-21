@@ -1,6 +1,7 @@
 package rpc
 
 import (
+	"encoding/gob"
 	"fmt"
 	"net/rpc"
 
@@ -14,6 +15,9 @@ type RPCClientAggregator struct {
 
 // NewRPCClientAggregator creates a new instance of RPCClientAggregator
 func NewRPCClientAggregator(address string) (*RPCClientAggregator, error) {
+	// Register AggregatorError type for gob encoding
+	gob.Register(&aggTypes.AggregatorError{})
+
 	client, err := rpc.Dial("tcp", address)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to aggregator: %v", err)

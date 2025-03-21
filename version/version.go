@@ -3,7 +3,7 @@ package version
 const (
 	// TMVersionDefault is the used as the fallback version of PellDVS
 	// when not using git describe. It is formatted with semantic versioning.
-	TMCoreSemVer = "0.2.2"
+	TMCoreSemVer = "0.3.0"
 
 	AVSIVersion = "0.0.1"
 	// P2PProtocol versions all p2p behavior and msgs.

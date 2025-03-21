@@ -81,14 +81,20 @@ docker-test:
 docker-test-pelle2e:
 	docker compose run --rm test-pelle2e
 
+docker-all-up:
+	docker compose up -d
+
+docker-all-down:
+	docker compose down -v
+
 docker-up:
 	docker compose up -d
 
-docker-up-operator:
-	make docker-operator-up
-
 docker-down:
 	docker compose down -v
+
+docker-up-operator:
+	make docker-operator-up
 
 docker-logs-operator:
 	make docker-operator-logs
@@ -134,5 +140,11 @@ docker-build-pelldvs: check-env-gh-token
 
 docker-build-pelle2e: check-env-gh-token
 	docker compose -f docker-compose.build.yml build pelle2e
+
+docker-operator-show-key:
+	docker compose exec operator bash -c "cat ~/.pelldvs/keys/operator.ecdsa.key.json | jq -r '.address'"
+
+docker-operator-show-interactor-config:
+	docker compose exec operator bash -c "cat ~/.pelldvs/config/interactor_config.json | jq -r"
 
 .PHONY: all node generator runner

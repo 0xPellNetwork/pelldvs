@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/0xPellNetwork/pelldvs-libs/crypto/ecdsa"
+	"github.com/0xPellNetwork/pelldvs-libs/log"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/chains/chainflags"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/chains/chainutils"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/client/utils"
@@ -49,6 +50,7 @@ pelldvs client dvs sync-group \
 }
 
 func handleSyncGroup(cmd *cobra.Command) error {
+	logger := getCmdLogger(cmd)
 	groupNumbersStr := chainflags.GroupNumbers.Value
 	if groupNumbersStr == "" {
 		groupNumbersStr = "0"
@@ -67,7 +69,7 @@ func handleSyncGroup(cmd *cobra.Command) error {
 		return fmt.Errorf("ECDSA key does not exist %s", kpath.ECDSA)
 	}
 
-	res, err := execSyncGroup(cmd, kpath.ECDSA, chainflags.ChainIDFlag.Value, groupNumbers)
+	res, err := execSyncGroup(cmd, logger, kpath.ECDSA, chainflags.ChainIDFlag.Value, groupNumbers)
 	if err != nil {
 		return fmt.Errorf("failed: %v", err)
 	}
@@ -76,7 +78,7 @@ func handleSyncGroup(cmd *cobra.Command) error {
 	return err
 }
 
-func execSyncGroup(cmd *cobra.Command, privKeyPath string, chainID int, groupNumbers []byte) (*gethtypes.Receipt, error) {
+func execSyncGroup(cmd *cobra.Command, logger log.Logger, privKeyPath string, chainID int, groupNumbers []byte) (*gethtypes.Receipt, error) {
 	cmdName := utils.GetPrettyCommandName(cmd)
 	ctx := context.Background()
 	senderAddress, err := ecdsa.GetAddressFromKeyStoreFile(privKeyPath)

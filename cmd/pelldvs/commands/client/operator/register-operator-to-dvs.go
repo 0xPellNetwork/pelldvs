@@ -9,6 +9,7 @@ import (
 
 	"github.com/0xPellNetwork/pelldvs-libs/crypto/bls"
 	"github.com/0xPellNetwork/pelldvs-libs/crypto/ecdsa"
+	"github.com/0xPellNetwork/pelldvs-libs/log"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/chains/chainflags"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/chains/chainutils"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/client/utils"
@@ -78,6 +79,7 @@ pelldvs client operator register-operator-to-dvs \
 }
 
 func handleRegisterOperatorToDVS(cmd *cobra.Command, groupNumbersStr string, socket string) error {
+	logger := getCmdLogger(cmd)
 	groupNumbers := chainutils.ConvStrsToUint8List(groupNumbersStr)
 	if len(groupNumbers) == 0 {
 		return fmt.Errorf("invalid group numbers %s", groupNumbersStr)
@@ -88,7 +90,7 @@ func handleRegisterOperatorToDVS(cmd *cobra.Command, groupNumbersStr string, soc
 		return fmt.Errorf("ECDSA key does not exist %s", kpath.ECDSA)
 	}
 
-	receipt, err := execRegisterOperatorToDVS(cmd, kpath.ECDSA, kpath.BLS, groupNumbers, socket)
+	receipt, err := execRegisterOperatorToDVS(cmd, logger, kpath.ECDSA, kpath.BLS, groupNumbers, socket)
 	if err != nil {
 		return fmt.Errorf("failed: %v", err)
 	}
@@ -98,7 +100,7 @@ func handleRegisterOperatorToDVS(cmd *cobra.Command, groupNumbersStr string, soc
 	return err
 }
 
-func execRegisterOperatorToDVS(cmd *cobra.Command, privKeyPath, blsKeyPath string, groupNumbers []uint8, socket string) (*gethtypes.Receipt, error) {
+func execRegisterOperatorToDVS(cmd *cobra.Command, logger log.Logger, privKeyPath, blsKeyPath string, groupNumbers []uint8, socket string) (*gethtypes.Receipt, error) {
 	logger.Info(
 		utils.GetPrettyCommandName(cmd),
 		"privKeyPath", privKeyPath,

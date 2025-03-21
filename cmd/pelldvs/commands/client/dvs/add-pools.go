@@ -9,11 +9,12 @@ import (
 
 	chaintypes "github.com/0xPellNetwork/pelldvs-interactor/types"
 	"github.com/0xPellNetwork/pelldvs-libs/crypto/ecdsa"
+	"github.com/0xPellNetwork/pelldvs-libs/log"
+	cmtos "github.com/0xPellNetwork/pelldvs-libs/os"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/chains/chainflags"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/chains/chainutils"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/client/utils"
 	pellcfg "github.com/0xPellNetwork/pelldvs/config"
-	cmtos "github.com/0xPellNetwork/pelldvs/libs/os"
 	"github.com/0xPellNetwork/pelldvs/pkg/keys"
 )
 
@@ -62,6 +63,7 @@ pelldvs client dvs add-pools \
 }
 
 func handleAddPools(cmd *cobra.Command) error {
+	logger := getCmdLogger(cmd)
 	groupNumber, err := chainutils.ConvStrToUint8(addPoolsCmdFlagGroupNumber.Value)
 	if err != nil {
 		return fmt.Errorf("failed to convert group number %s to uint8: %v", addPoolsCmdFlagGroupNumber.Value, err)
@@ -88,7 +90,7 @@ func handleAddPools(cmd *cobra.Command) error {
 		addPoolsParam.GroupNumber = groupNumber
 	}
 
-	receipt, err := execAddPools(cmd, addPoolsParam, kpath.ECDSA)
+	receipt, err := execAddPools(cmd, logger, addPoolsParam, kpath.ECDSA)
 	if err != nil {
 		return fmt.Errorf("failed: %v", err)
 	}
@@ -98,7 +100,7 @@ func handleAddPools(cmd *cobra.Command) error {
 	return err
 }
 
-func execAddPools(cmd *cobra.Command, params chaintypes.AddPoolsRequest, privKeyPath string) (*gethtypes.Receipt, error) {
+func execAddPools(cmd *cobra.Command, logger log.Logger, params chaintypes.AddPoolsRequest, privKeyPath string) (*gethtypes.Receipt, error) {
 	cmdName := utils.GetPrettyCommandName(cmd)
 	logger.Info(fmt.Sprintf("%s start", cmdName),
 		"privKeyPath", privKeyPath,

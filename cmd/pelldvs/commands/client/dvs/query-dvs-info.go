@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	chaintypes "github.com/0xPellNetwork/pelldvs-interactor/types"
+	"github.com/0xPellNetwork/pelldvs-libs/log"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/chains/chainflags"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/client/utils"
 	pellcfg "github.com/0xPellNetwork/pelldvs/config"
@@ -45,7 +46,8 @@ pelldvs client dvs query-dvs-info \
 }
 
 func handleQueryDVSInfo(cmd *cobra.Command) error {
-	dvsInfo, err := execQueryDVSInfo(cmd, chainflags.ChainIDFlag.Value)
+	logger := getCmdLogger(cmd)
+	dvsInfo, err := execQueryDVSInfo(cmd, logger, chainflags.ChainIDFlag.Value)
 	if err != nil {
 		return fmt.Errorf("failed: %v", err)
 	}
@@ -55,7 +57,7 @@ func handleQueryDVSInfo(cmd *cobra.Command) error {
 	return err
 }
 
-func execQueryDVSInfo(cmd *cobra.Command, chainID int) (*chaintypes.DVSInfo, error) {
+func execQueryDVSInfo(cmd *cobra.Command, logger log.Logger, chainID int) (*chaintypes.DVSInfo, error) {
 	cmdName := utils.GetPrettyCommandName(cmd)
 	logger.Info(cmdName,
 		"chainID", chainID,

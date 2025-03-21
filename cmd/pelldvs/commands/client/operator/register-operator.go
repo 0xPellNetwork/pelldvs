@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/0xPellNetwork/pelldvs-libs/crypto/ecdsa"
+	"github.com/0xPellNetwork/pelldvs-libs/log"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/chains/chainflags"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/client/utils"
 	pellcfg "github.com/0xPellNetwork/pelldvs/config"
@@ -72,12 +73,13 @@ pelldvs client operator register-operator \
 }
 
 func handleRegisterOperator(cmd *cobra.Command, metadataURI string, stakerOptoutWindowSeconds uint32, approverAddress string) error {
+	logger := getCmdLogger(cmd)
 	kpath := keys.GetKeysPath(pellcfg.CmtConfig, chainflags.FromKeyNameFlag.Value)
 	if !kpath.IsECDSAExist() {
 		return fmt.Errorf("ECDSA key does not exist %s", kpath.ECDSA)
 	}
 
-	receipt, err := execRegisterOperator(cmd, kpath.ECDSA, metadataURI, stakerOptoutWindowSeconds, approverAddress)
+	receipt, err := execRegisterOperator(cmd, logger, kpath.ECDSA, metadataURI, stakerOptoutWindowSeconds, approverAddress)
 	if err != nil {
 		return fmt.Errorf("failed: %v", err)
 	}
@@ -87,7 +89,7 @@ func handleRegisterOperator(cmd *cobra.Command, metadataURI string, stakerOptout
 	return err
 }
 
-func execRegisterOperator(cmd *cobra.Command, privKeyPath string, metadataURI string, stakerOptoutWindowSeconds uint32, approverAddress string) (*gethtypes.Receipt, error) {
+func execRegisterOperator(cmd *cobra.Command, logger log.Logger, privKeyPath string, metadataURI string, stakerOptoutWindowSeconds uint32, approverAddress string) (*gethtypes.Receipt, error) {
 	logger.Info(
 		utils.GetPrettyCommandName(cmd),
 		"privKeyPath", privKeyPath,

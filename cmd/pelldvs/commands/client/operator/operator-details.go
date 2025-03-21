@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/0xPellNetwork/pelldvs-interactor/types"
+	"github.com/0xPellNetwork/pelldvs-libs/log"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/client/utils"
 	pellcfg "github.com/0xPellNetwork/pelldvs/config"
 )
@@ -40,12 +41,13 @@ pelldvs query operator operator-details \
 
 func handleQueryOperatorDetails(cmd *cobra.Command, operatorAddr string,
 ) error {
+	logger := getCmdLogger(cmd)
 	if !gethcommon.IsHexAddress(operatorAddr) {
 		return fmt.Errorf("invalid address %s", operatorAddr)
 	}
 	var err error
 
-	result, err := execQueryOperatorDetails(cmd, operatorAddr)
+	result, err := execQueryOperatorDetails(cmd, logger, operatorAddr)
 	if err != nil {
 		return fmt.Errorf("failed to create group: %v", err)
 	}
@@ -55,7 +57,7 @@ func handleQueryOperatorDetails(cmd *cobra.Command, operatorAddr string,
 	return err
 }
 
-func execQueryOperatorDetails(cmd *cobra.Command, operator string) (*types.Operator, error) {
+func execQueryOperatorDetails(cmd *cobra.Command, logger log.Logger, operator string) (*types.Operator, error) {
 	logger.Info(
 		utils.GetPrettyCommandName(cmd),
 		"operator", operator,

@@ -8,6 +8,7 @@ import (
 	gethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/spf13/cobra"
 
+	"github.com/0xPellNetwork/pelldvs-libs/log"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/client/utils"
 	pellcfg "github.com/0xPellNetwork/pelldvs/config"
 )
@@ -39,10 +40,11 @@ pelldvs client operator is-operator \
 }
 
 func handleCheckIsOperator(cmd *cobra.Command, operatorAddr string) error {
+	logger := getCmdLogger(cmd)
 	if !gethcommon.IsHexAddress(operatorAddr) {
 		return fmt.Errorf("invalid address %s", operatorAddr)
 	}
-	result, err := execCheckIsOperator(cmd, operatorAddr)
+	result, err := execCheckIsOperator(cmd, logger, operatorAddr)
 	if err != nil {
 		return fmt.Errorf("failed to execCheckIsOperator: %v", err)
 	}
@@ -52,7 +54,7 @@ func handleCheckIsOperator(cmd *cobra.Command, operatorAddr string) error {
 	return err
 }
 
-func execCheckIsOperator(cmd *cobra.Command, operatorAddr string) (bool, error) {
+func execCheckIsOperator(cmd *cobra.Command, logger log.Logger, operatorAddr string) (bool, error) {
 	logger.Info(
 		utils.GetPrettyCommandName(cmd),
 		"operatorAddr", operatorAddr,

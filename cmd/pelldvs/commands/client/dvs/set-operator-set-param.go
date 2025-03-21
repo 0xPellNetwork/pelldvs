@@ -9,6 +9,7 @@ import (
 
 	chaintypes "github.com/0xPellNetwork/pelldvs-interactor/types"
 	"github.com/0xPellNetwork/pelldvs-libs/crypto/ecdsa"
+	"github.com/0xPellNetwork/pelldvs-libs/log"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/chains/chainflags"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/client/utils"
 	pellcfg "github.com/0xPellNetwork/pelldvs/config"
@@ -50,6 +51,7 @@ pelldvs client dvs set-operator-set-param \
 }
 
 func handleSetOperatorSet(cmd *cobra.Command, paramFilePath string) error {
+	logger := getCmdLogger(cmd)
 	kpath := keys.GetKeysPath(pellcfg.CmtConfig, chainflags.FromKeyNameFlag.Value)
 	if !kpath.IsECDSAExist() {
 		return fmt.Errorf("ECDSA key does not exist %s", kpath.ECDSA)
@@ -66,7 +68,7 @@ func handleSetOperatorSet(cmd *cobra.Command, paramFilePath string) error {
 		return fmt.Errorf("failed to unmarshal setOperatorSetParam: %v", err)
 	}
 
-	receipt, err := execSetOperatorSet(cmd, &setOperatorSetParam, kpath.ECDSA)
+	receipt, err := execSetOperatorSet(cmd, logger, &setOperatorSetParam, kpath.ECDSA)
 	if err != nil {
 		return fmt.Errorf("failed to handleSetOperatorSet: %v", err)
 	}
@@ -76,7 +78,7 @@ func handleSetOperatorSet(cmd *cobra.Command, paramFilePath string) error {
 	return err
 }
 
-func execSetOperatorSet(cmd *cobra.Command, params *chaintypes.SetOperatorSetParamRequest, privKeyPath string) (*gethtypes.Receipt, error) {
+func execSetOperatorSet(cmd *cobra.Command, logger log.Logger, params *chaintypes.SetOperatorSetParamRequest, privKeyPath string) (*gethtypes.Receipt, error) {
 	cmdName := utils.GetPrettyCommandName(cmd)
 	logger.Info(fmt.Sprintf("%s start", cmdName),
 		"privKeyPath", privKeyPath,

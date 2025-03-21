@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/0xPellNetwork/pelldvs-libs/crypto/ecdsa"
+	"github.com/0xPellNetwork/pelldvs-libs/log"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/chains/chainflags"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/client/utils"
 	pellcfg "github.com/0xPellNetwork/pelldvs/config"
@@ -14,12 +15,13 @@ import (
 )
 
 func handlePauseOrUnRegistryRouter(cmd *cobra.Command, ok bool) error {
+	logger := getCmdLogger(cmd)
 	kpath := keys.GetKeysPath(pellcfg.CmtConfig, chainflags.FromKeyNameFlag.Value)
 	if !kpath.IsECDSAExist() {
 		return fmt.Errorf("ECDSA key does not exist %s", kpath.ECDSA)
 	}
 
-	res, err := execPauseOrRegistryRouter(cmd, kpath.ECDSA, ok)
+	res, err := execPauseOrRegistryRouter(cmd, logger, kpath.ECDSA, ok)
 	if err != nil {
 		return fmt.Errorf("failed: %v", err)
 	}
@@ -29,7 +31,7 @@ func handlePauseOrUnRegistryRouter(cmd *cobra.Command, ok bool) error {
 	return err
 }
 
-func execPauseOrRegistryRouter(cmd *cobra.Command, privKeyPath string, ok bool) (*gethtypes.Receipt, error) {
+func execPauseOrRegistryRouter(cmd *cobra.Command, logger log.Logger, privKeyPath string, ok bool) (*gethtypes.Receipt, error) {
 	cmdName := utils.GetPrettyCommandName(cmd)
 	logger.Info(cmdName,
 		"privKeyPath", privKeyPath,

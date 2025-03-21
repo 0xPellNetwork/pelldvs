@@ -114,7 +114,7 @@ function register_operator_on_pell {
   show_operator_registered "$OPERATOR_ADDRESS"
 }
 
-function stake_and_delegate_to_operator() {
+function deposit_into_pool() {
   TestDeployerPrivKey="ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
   TestDeployerEvmAddr="0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
 
@@ -126,16 +126,12 @@ function stake_and_delegate_to_operator() {
 
   cast call $STBTC_ERC20_ADDRESS "balanceOf(address)(uint256)" $TestDeployerEvmAddr --rpc-url $ETH_RPC_URL
 
-  sleep 5
-
   cast send $STBTC_ERC20_ADDRESS \
     "approve(address,uint256)" \
     $STRTEGY_MANAGER_ADDRESS \
     $STAKE_AMOUNT \
     --private-key $TestDeployerPrivKey \
     --rpc-url $ETH_RPC_URL
-
-  sleep 5
 
   cast send $STRTEGY_MANAGER_ADDRESS \
     "depositIntoStrategy(address,address,uint256)" \
@@ -144,16 +140,18 @@ function stake_and_delegate_to_operator() {
     $STAKE_AMOUNT \
     --private-key $TestDeployerPrivKey \
     --rpc-url $ETH_RPC_URL
+}
 
+function stake_and_delegate_to_operator() {
+  TestDeployerPrivKey="ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+  TestDeployerEvmAddr="0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+
+  STBTC_ERC20_ADDRESS=$(ssh hardhat "cat $HARDHAT_CONTRACTS_PATH/stBTC-TestnetMintableERC20.json" | jq -r .address)
+  STRTEGY_MANAGER_ADDRESS=$(ssh hardhat "cat $HARDHAT_CONTRACTS_PATH/StrategyManager-Proxy.json" | jq -r .address)
+  STBTC_STRATEGY_ADDRESS=$(ssh hardhat "cat $HARDHAT_CONTRACTS_PATH/stBTC-Strategy-Proxy.json" | jq -r .address)
+
+  deposit_into_pool
   sleep 5
-
-  logt "Query Strategy Shares"
-
-  cast call $STRTEGY_MANAGER_ADDRESS \
-    "stakerStrategyShares(address,address)(uint256)" \
-    $TestDeployerEvmAddr \
-    $STBTC_STRATEGY_ADDRESS \
-    --rpc-url $ETH_RPC_URL
 
   logt "Stake to Strategy Done"
 
@@ -201,6 +199,15 @@ function stake_and_delegate_to_operator() {
 
   OPERATOR_STAKE_MNAGER=$(ssh hardhat "cat $HARDHAT_DVS_PATH/OperatorStakeManager-Proxy.json" | jq -r .address)
 
+  logt "Query weight of operator from Pell Chain"
+  OMNI_OPERATOR_SHARES_MANAGER_ADDRESS=$(ssh hardhat "cat $HARDHAT_CONTRACTS_PATH/OmniOperatorSharesManager-Proxy.json" | jq -r .address)
+  logt "Query weight of operator from OMNI_OPERATOR_SHARES_MANAGER_ADDRESS: $OMNI_OPERATOR_SHARES_MANAGER_ADDRESS"
+  cast call $OMNI_OPERATOR_SHARES_MANAGER_ADDRESS \
+    "getOperatorShares(address,(uint256,address)[])(uint256[])" \
+    $OPERATOR_ADDRESS \
+    "[(1337,$STBTC_STRATEGY_ADDRESS)]" \
+    --rpc-url $ETH_RPC_URL
+
   pelldvs client operator get-weight-for-group \
     --home $PELLDVS_HOME \
     --dvs-rpc-url $SERVICE_CHAIN_RPC_URL \
@@ -208,6 +215,29 @@ function stake_and_delegate_to_operator() {
     --rpc-url $ETH_RPC_URL \
     --registry-router $REGISTRY_ROUTER_ADDRESS \
     0 $OPERATOR_ADDRESS
+
+  logt "deposit into pool again"
+  deposit_into_pool
+
+  sleep 5
+
+  logt "query weight again"
+  OMNI_OPERATOR_SHARES_MANAGER_ADDRESS=$(ssh hardhat "cat $HARDHAT_CONTRACTS_PATH/OmniOperatorSharesManager-Proxy.json" | jq -r .address)
+  logt "Query weight of operator from OMNI_OPERATOR_SHARES_MANAGER_ADDRESS: $OMNI_OPERATOR_SHARES_MANAGER_ADDRESS"
+  cast call $OMNI_OPERATOR_SHARES_MANAGER_ADDRESS \
+    "getOperatorShares(address,(uint256,address)[])(uint256[])" \
+    $OPERATOR_ADDRESS \
+    "[(1337,$STBTC_STRATEGY_ADDRESS)]" \
+    --rpc-url $ETH_RPC_URL
+
+  pelldvs client operator get-weight-for-group \
+    --home $PELLDVS_HOME \
+    --dvs-rpc-url $SERVICE_CHAIN_RPC_URL \
+    --dvs-operator-stake-manager $OPERATOR_STAKE_MNAGER \
+    --rpc-url $ETH_RPC_URL \
+    --registry-router $REGISTRY_ROUTER_ADDRESS \
+    0 $OPERATOR_ADDRESS
+
 
   logt ""
   logt "Delegate to Operator Done"

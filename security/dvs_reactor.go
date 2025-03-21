@@ -4,14 +4,12 @@ import (
 	"context"
 	"fmt"
 	"math/big"
-	"time"
 
 	dbm "github.com/cometbft/cometbft-db"
 	"github.com/cosmos/gogoproto/proto"
 
 	"github.com/0xPellNetwork/pelldvs-interactor/interactor/reader"
 	evmtypes "github.com/0xPellNetwork/pelldvs-interactor/types"
-	"github.com/0xPellNetwork/pelldvs-libs/crypto/bls"
 	"github.com/0xPellNetwork/pelldvs-libs/log"
 	aggtypes "github.com/0xPellNetwork/pelldvs/aggregator"
 	avsitypes "github.com/0xPellNetwork/pelldvs/avsi/types"
@@ -33,29 +31,18 @@ type DVSReactor struct {
 	aggregator        aggtypes.Aggregator
 	dvsRequestIndexer requestindex.DvsRequestIndexer
 	dvsReader         reader.DVSReader
-	privValidator     types.PrivValidator
 	eventManager      *EventManager
 }
 
 func CreateDVSReactor(
 	config config.PellConfig,
 	proxyApp proxy.AppConns,
-	storeDir string,
 	dvsRequestIndexer requestindex.DvsRequestIndexer,
 	db dbm.DB,
+	dvsState *DVSState,
 	logger log.Logger,
-	privValidator types.PrivValidator,
 	eventManager *EventManager,
 ) (DVSReactor, error) {
-	dvsReqStore, err := NewStore(storeDir)
-	if err != nil {
-		return DVSReactor{}, fmt.Errorf("failed to create DVSReqStore: %v", err)
-	}
-
-	dvsState, err := NewDVSState(&config, dvsReqStore, storeDir)
-	if err != nil {
-		return DVSReactor{}, fmt.Errorf("failed to create DVSState: %v", err)
-	}
 
 	dvsReader, err := reader.NewDVSReader(config.InteractorConfigPath, db, logger)
 	if err != nil {
@@ -69,25 +56,12 @@ func CreateDVSReactor(
 		logger:            logger,
 		dvsRequestIndexer: dvsRequestIndexer,
 		dvsReader:         dvsReader,
-		privValidator:     privValidator,
 		eventManager:      eventManager,
 	}
-
 	return dvs, nil
 }
 
-func (dvs *DVSReactor) OnQuery(key []byte) ([]byte, []byte, error) {
-	res, err := dvs.ProxyApp.Query().Query(context.Background(), &avsitypes.RequestQuery{
-		Data: key,
-	})
-	if err != nil {
-		return nil, nil, err
-	}
-	return res.Key, res.Value, nil
-}
-
 func (dvs *DVSReactor) SaveDVSRequestResult(res *avsitypes.DVSRequestResult, first bool) error {
-
 	if first {
 		rawBytesDvsRequest, err := proto.Marshal(res.DvsRequest)
 		if err != nil {
@@ -98,24 +72,44 @@ func (dvs *DVSReactor) SaveDVSRequestResult(res *avsitypes.DVSRequestResult, fir
 		if err != nil {
 			return err
 		}
-
 		if old != nil {
 			return fmt.Errorf("DVS request hash %X already exist", hash)
 		}
 	}
-
 	return dvs.dvsRequestIndexer.Index(res)
 }
 
-func (dvs *DVSReactor) OnRequest(request avsitypes.DVSRequest) (*avsitypes.DVSRequestResult, error) {
+func (dvs *DVSReactor) QueryRequestResult(res *avsitypes.DVSRequest) (*avsitypes.DVSRequestResult, error) {
+	rawBytesDvsRequest, err := proto.Marshal(res)
+	if err != nil {
+		return nil, err
+	}
+	hashAsBytes := types.DvsRequest(rawBytesDvsRequest).Hash()
+	r, err := dvs.dvsRequestIndexer.Get(hashAsBytes)
+	if err != nil {
+		return nil, err
+	}
+	if r == nil {
+		return nil, fmt.Errorf("dvs (%X) not found", string(hashAsBytes))
+	}
+	return &avsitypes.DVSRequestResult{
+		DvsRequest:                 r.DvsRequest,
+		DvsResponse:                r.DvsResponse,
+		ResponseProcessDvsRequest:  r.ResponseProcessDvsRequest,
+		ResponseProcessDvsResponse: r.ResponseProcessDvsResponse,
+	}, nil
+}
 
-	reqIdx := avsitypes.DVSRequestResult{
+func (dvs *DVSReactor) HandleDVSRequest(request avsitypes.DVSRequest) error {
+	dvs.logger.Info("dvsReactor.HandleDVSRequest", "request", request)
+
+	// First save the request
+	result := avsitypes.DVSRequestResult{
 		DvsRequest: &request,
 	}
-
-	if err := dvs.SaveDVSRequestResult(&reqIdx, true); err != nil {
-		dvs.logger.Error("dvsReactor.SaveDVSRequest save req", "err", err.Error())
-		return nil, err
+	if err := dvs.SaveDVSRequestResult(&result, true); err != nil {
+		dvs.logger.Error("dvsReactor dvsindex.Index", "err", err.Error())
+		return err
 	}
 
 	groupNumbers := make(evmtypes.GroupNumbers, len(request.GroupNumbers))
@@ -124,8 +118,8 @@ func (dvs *DVSReactor) OnRequest(request avsitypes.DVSRequest) (*avsitypes.DVSRe
 	}
 	operatorsDvsState, err := dvs.dvsReader.GetOperatorsDVSStateAtBlock(uint64(request.ChainId), groupNumbers, uint32(request.Height))
 	if err != nil {
-		dvs.logger.Error("dvsInteractor.GetOperatorsDVSStateAtBlock", "err", err.Error())
-		return nil, err
+		dvs.logger.Error("dvsInteractor dvsReader.GetOperatorsDVSStateAtBlock", "err", err.Error())
+		return err
 	}
 
 	operators := make([]*avsitypes.Operator, 0)
@@ -148,169 +142,113 @@ func (dvs *DVSReactor) OnRequest(request avsitypes.DVSRequest) (*avsitypes.DVSRe
 		})
 	}
 
-	responseProcessDVSRequest, err := dvs.ProxyApp.Dvs().ProcessDVSRequest(context.Background(), &avsitypes.RequestProcessDVSRequest{
+	response, err := dvs.ProxyApp.Dvs().ProcessDVSRequest(context.Background(), &avsitypes.RequestProcessDVSRequest{
 		Request:  &request,
 		Operator: operators,
 	})
 	if err != nil {
-		return nil, err
+		dvs.logger.Error("dvsReactor pellProxyApp.ProcessDVSRequest", "err", err.Error())
+		return err
 	}
 
 	// Check if responseDigest length is equal to 32
-	if len(responseProcessDVSRequest.ResponseDigest) != responseDigestLenLimit {
-		return nil, fmt.Errorf("responseDigest length %d is not equal to %d", responseProcessDVSRequest.ResponseDigest, responseDigestLenLimit)
+	if len(response.ResponseDigest) != responseDigestLenLimit {
+		dvs.logger.Error("responseDigest length is not equal to 32", "responseDigest", response.ResponseDigest)
+		return fmt.Errorf("responseDigest length %d is not equal to %d", response.ResponseDigest, responseDigestLenLimit)
 	}
 
-	reqResIdx := avsitypes.DVSRequestResult{
-		DvsRequest:                &request,
-		ResponseProcessDvsRequest: responseProcessDVSRequest,
+	// Second save the request
+	result.ResponseProcessDvsRequest = response
+	if err := dvs.SaveDVSRequestResult(&result, false); err != nil {
+		dvs.logger.Error("dvsReactor dvsindex.Index", "err", err.Error())
+		return err
 	}
 
-	if err := dvs.SaveDVSRequestResult(&reqResIdx, false); err != nil {
-		dvs.logger.Error("dvsReactor.dvsindex.Index", "err", err.Error())
-		return nil, err
-	}
-
-	signature, err := dvs.privValidator.SignBytes(responseProcessDVSRequest.ResponseDigest)
-	if err != nil {
-		dvs.logger.Error("SignMessage failed", "error", err)
-		return nil, err
-	}
-	dvs.logger.Debug("responseWithSignature", "signature", signature)
-
-	g1p := bls.G1Point{
-		G1Affine: signature.G1Affine,
-	}
-	sig := bls.Signature{G1Point: &g1p}
-
-	responseWithSingature := aggtypes.ResponseWithSignature{
-		Data:        responseProcessDVSRequest.Response,
-		Signature:   &sig,
-		OperatorID:  dvs.dvsState.operatorID,
-		RequestData: request,
-		Digest:      [32]byte(responseProcessDVSRequest.ResponseDigest),
-	}
-
-	// Create a channel to receive validated response
-	validatedResponseCh := make(chan aggtypes.ValidatedResponse, 1)
-
-	// Send response signature to aggregatorReactor and wait for result
-	err = dvs.aggregator.CollectResponseSignature(&responseWithSingature, validatedResponseCh)
-	if err != nil {
-		dvs.logger.Error("Failed to send response signature to aggregatorReactor", "error", err)
-		return nil, fmt.Errorf("failed to send response signature to aggregatorReactor: %v", err)
-	}
-
-	var responseProcessDVSResponse *avsitypes.ResponseProcessDVSResponse
-	// Wait for validated response
-	select {
-	case validatedResponse := <-validatedResponseCh:
-
-		publicG1 := make([][]byte, 0, len(validatedResponse.NonSignersPubkeysG1))
-
-		for _, v := range validatedResponse.NonSignersPubkeysG1 {
-			publicG1 = append(publicG1, v.Serialize())
-		}
-
-		apksG1 := make([][]byte, 0, len(validatedResponse.GroupApksG1))
-
-		for _, v := range validatedResponse.GroupApksG1 {
-			apksG1 = append(apksG1, v.Serialize())
-		}
-
-		indices := make([]*avsitypes.NonSignerStakeIndice, 0, len(validatedResponse.NonSignerStakeIndices))
-
-		for _, v := range validatedResponse.NonSignerStakeIndices {
-			indices = append(indices, &avsitypes.NonSignerStakeIndice{
-				NonSignerStakeIndice: v,
-			})
-		}
-
-		if validatedResponse.Err == nil {
-			dvsRes := avsitypes.DVSResponse{
-				Data:                        validatedResponse.Data,
-				Hash:                        validatedResponse.Hash,
-				NonSignersPubkeysG1:         publicG1,
-				GroupApksG1:                 apksG1,
-				SignersApkG2:                validatedResponse.SignersApkG2.Serialize(),
-				SignersAggSigG1:             validatedResponse.SignersAggSigG1.Serialize(),
-				NonSignerGroupBitmapIndices: validatedResponse.NonSignerGroupBitmapIndices,
-				GroupApkIndices:             validatedResponse.GroupApkIndices,
-				TotalStakeIndices:           validatedResponse.TotalStakeIndices,
-				NonSignerStakeIndices:       indices,
-			}
-
-			dvsResponseIdx := avsitypes.DVSRequestResult{
-				DvsRequest:                &request,
-				ResponseProcessDvsRequest: responseProcessDVSRequest,
-				DvsResponse:               &dvsRes,
-			}
-
-			if err := dvs.SaveDVSRequestResult(&dvsResponseIdx, false); err != nil {
-				dvs.logger.Error("dvsReactor.dvsindex.Index dvsResponseIdx", "err", err.Error())
-				return nil, err
-			}
-
-			// If no error, send validated response to proxy application
-			postReq := &avsitypes.RequestProcessDVSResponse{
-				DvsResponse: &dvsRes,
-				DvsRequest:  &request,
-			}
-
-			responseProcessDVSResponse, err = dvs.ProxyApp.Dvs().ProcessDVSResponse(context.Background(), postReq)
-			if err != nil {
-				return nil, err
-			}
-
-			resultIdx := avsitypes.DVSRequestResult{
-				DvsRequest:                 &request,
-				ResponseProcessDvsRequest:  responseProcessDVSRequest,
-				DvsResponse:                &dvsRes,
-				ResponseProcessDvsResponse: responseProcessDVSResponse,
-			}
-
-			if err := dvs.SaveDVSRequestResult(&resultIdx, false); err != nil {
-				dvs.logger.Error("dvsReactor.dvsindex.Index dvsResponseIdx", "err", err.Error())
-				return nil, err
-			}
-
-			// Log validated response details
-			dvs.logger.Info("Validated Response Details",
-				"Hash", validatedResponse.Hash,
-				"NonSignerGroupBitmapIndices", validatedResponse.NonSignerGroupBitmapIndices,
-				"NonSignersPubkeysG1", validatedResponse.NonSignersPubkeysG1,
-				"GroupApksG1", validatedResponse.GroupApksG1,
-				"SignersApkG2", validatedResponse.SignersApkG2,
-				"SignersAggSigG1", validatedResponse.SignersAggSigG1,
-				"GroupApkIndices", validatedResponse.GroupApkIndices,
-				"TotalStakeIndices", validatedResponse.TotalStakeIndices,
-				"NonSignerStakeIndices", validatedResponse.NonSignerStakeIndices,
-			)
-
-		} else {
-			dvs.logger.Error("Aggregator returned an error", "error", validatedResponse.Err)
-		}
-	case <-time.After(5 * time.Second):
-		return nil, fmt.Errorf("timeout waiting for aggregatorReactor response")
-	}
-
-	dvs.logger.Debug("responseWithSingature", "responseWithSingature", responseWithSingature)
-	dvs.logger.Debug("responseProcessDVSRequest", "responseProcessDVSRequest", responseProcessDVSRequest)
-	dvs.logger.Debug("pellProxyApp", "pellProxyApp", dvs.ProxyApp)
-	dvs.logger.Debug("OnRequest", "request", request)
-
-	return &avsitypes.DVSRequestResult{
-		DvsRequest:                 &request,
-		ResponseProcessDvsRequest:  responseProcessDVSRequest,
-		ResponseProcessDvsResponse: responseProcessDVSResponse,
-	}, nil
+	dvs.eventManager.eventBus.Publish(types.CollectResponseSignatureRequest, request.Hash())
+	return nil
 }
 
-func (dvs *DVSReactor) RequestSignatureCollection() {
-	dvs.logger.Info("Publishing CollectResponseSignatureRequest event")
-	dvs.eventManager.eventBus.Publish(types.CollectResponseSignatureRequest)
-}
+func (dvs *DVSReactor) OnRequestAfterAggregated(requestHash avsitypes.DVSRequestHash, validatedResponse aggtypes.ValidatedResponse) error {
+	dvs.logger.Info("dvsReactor.OnRequestAfterAggregated", "requestHash", requestHash)
 
-func (dvs *DVSReactor) HandleSignatureCollectionResponse() {
+	if validatedResponse.Err != nil {
+		dvs.logger.Error("Aggregator returned an error", "error", validatedResponse.Err)
+		return validatedResponse.Err
+	}
 
+	// Build dvs response
+	publicG1 := make([][]byte, 0, len(validatedResponse.NonSignersPubkeysG1))
+	for _, v := range validatedResponse.NonSignersPubkeysG1 {
+		publicG1 = append(publicG1, v.Serialize())
+	}
+
+	apksG1 := make([][]byte, 0, len(validatedResponse.GroupApksG1))
+	for _, v := range validatedResponse.GroupApksG1 {
+		apksG1 = append(apksG1, v.Serialize())
+	}
+
+	indices := make([]*avsitypes.NonSignerStakeIndice, 0, len(validatedResponse.NonSignerStakeIndices))
+	for _, v := range validatedResponse.NonSignerStakeIndices {
+		indices = append(indices, &avsitypes.NonSignerStakeIndice{
+			NonSignerStakeIndice: v,
+		})
+	}
+
+	dvsResponse := avsitypes.DVSResponse{
+		Data:                        validatedResponse.Data,
+		Hash:                        validatedResponse.Hash,
+		NonSignersPubkeysG1:         publicG1,
+		GroupApksG1:                 apksG1,
+		SignersApkG2:                validatedResponse.SignersApkG2.Serialize(),
+		SignersAggSigG1:             validatedResponse.SignersAggSigG1.Serialize(),
+		NonSignerGroupBitmapIndices: validatedResponse.NonSignerGroupBitmapIndices,
+		GroupApkIndices:             validatedResponse.GroupApkIndices,
+		TotalStakeIndices:           validatedResponse.TotalStakeIndices,
+		NonSignerStakeIndices:       indices,
+	}
+
+	// Query request result
+	result, err := dvs.dvsRequestIndexer.Get(requestHash)
+	if err != nil {
+		dvs.logger.Error("dvsReactor.dvsindex.Get", "err", err.Error())
+		return err
+	}
+
+	// Third save the request
+	result.DvsResponse = &dvsResponse
+	if err := dvs.SaveDVSRequestResult(result, false); err != nil {
+		dvs.logger.Error("dvsReactor.dvsindex.Index dvsResponseIdx", "err", err.Error())
+		return err
+	}
+
+	// If no error, send validated response to proxy application
+	postResponse := &avsitypes.RequestProcessDVSResponse{
+		DvsResponse: &dvsResponse,
+		DvsRequest:  result.DvsRequest,
+	}
+	responseProcessDVSResponse, err := dvs.ProxyApp.Dvs().ProcessDVSResponse(context.Background(), postResponse)
+	if err != nil {
+		return err
+	}
+
+	// Fourth save the request
+	result.ResponseProcessDvsResponse = responseProcessDVSResponse
+	if err := dvs.SaveDVSRequestResult(result, false); err != nil {
+		dvs.logger.Error("dvsReactor.dvsindex.Index dvsResponseIdx", "err", err.Error())
+		return err
+	}
+
+	// Log validated response details
+	dvs.logger.Info("Validated Response Details",
+		"Hash", validatedResponse.Hash,
+		"NonSignerGroupBitmapIndices", validatedResponse.NonSignerGroupBitmapIndices,
+		"NonSignersPubkeysG1", validatedResponse.NonSignersPubkeysG1,
+		"GroupApksG1", validatedResponse.GroupApksG1,
+		"SignersApkG2", validatedResponse.SignersApkG2,
+		"SignersAggSigG1", validatedResponse.SignersAggSigG1,
+		"GroupApkIndices", validatedResponse.GroupApkIndices,
+		"TotalStakeIndices", validatedResponse.TotalStakeIndices,
+		"NonSignerStakeIndices", validatedResponse.NonSignerStakeIndices,
+	)
+	return nil
 }

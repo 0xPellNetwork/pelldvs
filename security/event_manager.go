@@ -2,6 +2,7 @@ package security
 
 import (
 	"fmt"
+	avsitypes "github.com/0xPellNetwork/pelldvs/avsi/types"
 	"github.com/0xPellNetwork/pelldvs/types"
 )
 
@@ -33,14 +34,26 @@ func (em *EventManager) StartListening() {
 		for {
 			select {
 			case event := <-requestCh:
-				if event == types.CollectResponseSignatureRequest {
+				if event.Type == types.CollectResponseSignatureRequest {
 					fmt.Println("[EventManager] Received CollectResponseSignatureRequest, forwarding to Aggregator")
-					em.aggregatorReactor.HandleSignatureCollectionRequest()
+					requestHash := event.Payload.(avsitypes.DVSRequestHash)
+					err := em.aggregatorReactor.HandleSignatureCollectionRequest(requestHash)
+					if err != nil {
+						fmt.Println("[EventManager] Error handling signature collection request: ", err)
+					} else {
+						fmt.Println("[EventManager] Handled signature collection request")
+					}
 				}
 			case event := <-responseCh:
-				if event == types.CollectResponseSignatureDone {
+				if event.Type == types.CollectResponseSignatureDone {
 					fmt.Println("[EventManager] Received CollectResponseSignatureDone, notifying DVS")
-					em.dvsReactor.HandleSignatureCollectionResponse()
+					res := event.Payload.(AggregatorResponse)
+					err := em.dvsReactor.OnRequestAfterAggregated(res.requestHash, res.validateResponse)
+					if err != nil {
+						fmt.Println("[EventManager] Error notifying DVS: ", err)
+					} else {
+						fmt.Println("[EventManager] Notified DVS with response")
+					}
 				}
 			}
 		}

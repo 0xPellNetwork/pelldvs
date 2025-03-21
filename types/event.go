@@ -1,8 +1,13 @@
 package types
 
-type ReactorEvent string
+type ReactorEventType string
 
 const (
-	CollectResponseSignatureRequest ReactorEvent = "CollectResponseSignatureRequest"
-	CollectResponseSignatureDone    ReactorEvent = "CollectResponseSignatureDone"
+	CollectResponseSignatureRequest ReactorEventType = "CollectResponseSignatureRequest"
+	CollectResponseSignatureDone    ReactorEventType = "CollectResponseSignatureDone"
 )
+
+type ReactorEvent struct {
+	Type    ReactorEventType
+	Payload any
+}

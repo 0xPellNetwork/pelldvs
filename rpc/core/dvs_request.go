@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/0xPellNetwork/pelldvs/libs/bytes"
 
 	"github.com/cosmos/gogoproto/proto"
 
@@ -24,7 +25,7 @@ func (env *Environment) RequestDVS(ctx *rpctypes.Context,
 	groupThresholdPercentages []uint32,
 ) (*ctypes.ResultRequest, error) {
 
-	req := avsiTypes.DVSRequest{
+	request := avsiTypes.DVSRequest{
 		Data:                      data,
 		Height:                    height,
 		ChainId:                   chainid,
@@ -32,8 +33,7 @@ func (env *Environment) RequestDVS(ctx *rpctypes.Context,
 		GroupThresholdPercentages: groupThresholdPercentages,
 	}
 
-	_, err := env.DVSReactor.OnRequest(req)
-
+	err := env.DVSReactor.HandleDVSRequest(request)
 	if err != nil {
 		return &ctypes.ResultRequest{}, err
 	}
@@ -44,33 +44,28 @@ func (env *Environment) RequestDVS(ctx *rpctypes.Context,
 func (env *Environment) RequestDVSAsync(ctx *rpctypes.Context,
 	data []byte,
 	height int64,
-	chainid int64,
+	chainID int64,
 	groupNumbers []uint32,
 	groupThresholdPercentages []uint32,
 ) (*ctypes.ResultRequestDvsAsync, error) {
 
-	req := avsiTypes.DVSRequest{
+	request := avsiTypes.DVSRequest{
 		Data:                      data,
 		Height:                    height,
-		ChainId:                   chainid,
+		ChainId:                   chainID,
 		GroupNumbers:              groupNumbers,
 		GroupThresholdPercentages: groupThresholdPercentages,
 	}
 
-	rawBytesDvsRequest, err := proto.Marshal(&req)
-	if err != nil {
-		return nil, err
-	}
-	hash := types.DvsRequest(rawBytesDvsRequest).Hash()
-
 	go func() {
-		if _, err := env.DVSReactor.OnRequest(req); err != nil {
-			env.Logger.Error("RequestDvsAsync", "module", "rpc", "func", "OnRequest", "err", err)
+		if err := env.DVSReactor.HandleDVSRequest(request); err != nil {
+			env.Logger.Error("RequestDvsAsync", "module", "rpc", "func", "HandleDVSRequest", "err", err)
 		}
 	}()
 
-	return &ctypes.ResultRequestDvsAsync{Hash: hash}, nil
-
+	return &ctypes.ResultRequestDvsAsync{
+		Hash: bytes.HexBytes(request.Hash()),
+	}, nil
 }
 
 // QueryRequest allows you to query for a DVS request result. It returns a

@@ -229,12 +229,27 @@ func NewNodeWithContext(ctx context.Context,
 	// Add private IDs to addrbook to block those peers being added
 	addrBook.AddPrivateIDs(splitAndTrimEmpty(config.P2P.PrivatePeerIDs, ",", " "))
 
+	// Initialize the DVS request store
+	storeDir := config.RootDir + "/data/security_store"
+	dvsReqStore, err := security.NewStore(storeDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create DVS request store: %v", err)
+	}
+
+	dvsState, err := security.NewDVSState(config.Pell, dvsReqStore, storeDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create DVS state: %v", err)
+	}
+
+	// Create the event manager
 	eventManager := security.NewEventManager()
-	dvsReactor, err := security.CreateDVSReactor(*config.Pell, proxyApp, config.RootDir+"/data/security_store", dvsRequestIndexer, db, logger, privValidator, eventManager)
+
+	// Create the DVS and Aggregator reactors
+	dvsReactor, err := security.CreateDVSReactor(*config.Pell, proxyApp, dvsRequestIndexer, db, dvsState, logger, eventManager)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create dvsReactor: %w", err)
 	}
-	aggregatorReactor := security.CreateAggregatorReactor(aggregator, logger, eventManager)
+	aggregatorReactor := security.CreateAggregatorReactor(aggregator, dvsRequestIndexer, privValidator, dvsState, logger, eventManager)
 
 	eventManager.SetDVSReactor(&dvsReactor)
 	eventManager.SetAggregatorReactor(aggregatorReactor)

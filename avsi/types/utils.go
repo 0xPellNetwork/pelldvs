@@ -1,8 +1,9 @@
 package types
 
 import (
-	"github.com/0xPellNetwork/pelldvs/crypto/tmhash"
 	"github.com/cosmos/gogoproto/proto"
+
+	"github.com/0xPellNetwork/pelldvs/crypto/tmhash"
 )
 
 type DVSRequestHash []byte

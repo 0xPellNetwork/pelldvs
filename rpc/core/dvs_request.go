@@ -4,11 +4,11 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/0xPellNetwork/pelldvs/libs/bytes"
 
 	"github.com/cosmos/gogoproto/proto"
 
 	avsiTypes "github.com/0xPellNetwork/pelldvs/avsi/types"
+	"github.com/0xPellNetwork/pelldvs/libs/bytes"
 	cmtmath "github.com/0xPellNetwork/pelldvs/libs/math"
 	cmtquery "github.com/0xPellNetwork/pelldvs/libs/query"
 	ctypes "github.com/0xPellNetwork/pelldvs/rpc/core/types"

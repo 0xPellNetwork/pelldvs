@@ -2,6 +2,7 @@ package security
 
 import (
 	"fmt"
+
 	"github.com/0xPellNetwork/pelldvs-libs/crypto/bls"
 	"github.com/0xPellNetwork/pelldvs-libs/log"
 	aggtypes "github.com/0xPellNetwork/pelldvs/aggregator"

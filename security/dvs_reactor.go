@@ -28,7 +28,6 @@ type DVSReactor struct {
 	ProxyApp          proxy.AppConns
 	dvsState          *DVSState
 	logger            log.Logger
-	aggregator        aggtypes.Aggregator
 	dvsRequestIndexer requestindex.DvsRequestIndexer
 	dvsReader         reader.DVSReader
 	eventManager      *EventManager

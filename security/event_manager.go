@@ -1,8 +1,6 @@
 package security
 
 import (
-	"fmt"
-
 	"github.com/0xPellNetwork/pelldvs-libs/log"
 	avsitypes "github.com/0xPellNetwork/pelldvs/avsi/types"
 	"github.com/0xPellNetwork/pelldvs/types"
@@ -39,28 +37,27 @@ func (em *EventManager) StartListening() {
 			select {
 			case event := <-requestCh:
 				if event.Type == types.CollectResponseSignatureRequest {
-					em.logger.Info(fmt.Sprintf("Received CollectResponseSignatureRequest"))
+					em.logger.Info("Received CollectResponseSignatureRequest")
 
 					requestHash := event.Payload.(avsitypes.DVSRequestHash)
-					err := em.aggregatorReactor.HandleSignatureCollectionRequest(requestHash)
-					if err != nil {
-						em.logger.Error("failed to handle aggregator request: %v", err)
+					if err := em.aggregatorReactor.HandleSignatureCollectionRequest(requestHash); err != nil {
+						em.logger.Error("failed to handle aggregator request", "error", err)
 					}
 
-					em.logger.Info(fmt.Sprintf("Handled CollectResponseSignatureRequest"))
+					em.logger.Info("Handled CollectResponseSignatureRequest")
 				}
 
 			case event := <-responseCh:
 				if event.Type == types.CollectResponseSignatureDone {
-					em.logger.Info(fmt.Sprintf("Received CollectResponseSignatureDone"))
+					em.logger.Info("Received CollectResponseSignatureDone")
 
 					res := event.Payload.(AggregatorResponse)
 					err := em.dvsReactor.OnRequestAfterAggregated(res.requestHash, res.validateResponse)
 					if err != nil {
-						fmt.Println("[EventManager] Error notifying DVS: ", err)
+						em.logger.Error("failed to handle aggregator request", "error", err)
 					}
 
-					em.logger.Info(fmt.Sprintf("Handled CollectResponseSignatureDone"))
+					em.logger.Info("Handled CollectResponseSignatureDone")
 				}
 			}
 		}

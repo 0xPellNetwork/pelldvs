@@ -4,29 +4,27 @@ import (
 	"sync"
 )
 
+// ReactorEventBus is a struct that manages event subscriptions and publications.
 type ReactorEventBus struct {
-	channels map[ReactorEventType]chan ReactorEvent
-	mu       sync.RWMutex
+	channels sync.Map // map[ReactorEventType]chan ReactorEvent
 }
 
+// NewReactorEventBus creates a new ReactorEventBus.
 func NewReactorEventBus() *ReactorEventBus {
-	return &ReactorEventBus{
-		channels: make(map[ReactorEventType]chan ReactorEvent),
-	}
+	return &ReactorEventBus{}
 }
 
+// Subscribe subscribes to a ReactorEventType and returns a channel that will receive ReactorEvents.
 func (eb *ReactorEventBus) Subscribe(eventType ReactorEventType) <-chan ReactorEvent {
-	eb.mu.Lock()
-	defer eb.mu.Unlock()
 	ch := make(chan ReactorEvent, 16)
-	eb.channels[eventType] = ch
+	eb.channels.Store(eventType, ch)
 	return ch
 }
 
+// Publish publishes a ReactorEvent to all subscribers of the given ReactorEventType.
 func (eb *ReactorEventBus) Publish(eventType ReactorEventType, payload any) {
-	eb.mu.RLock()
-	defer eb.mu.RUnlock()
-	if ch, exists := eb.channels[eventType]; exists {
+	if chAny, exists := eb.channels.Load(eventType); exists {
+		ch := chAny.(chan ReactorEvent)
 		ch <- ReactorEvent{
 			Type:    eventType,
 			Payload: payload,

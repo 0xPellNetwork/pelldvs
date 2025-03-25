@@ -44,9 +44,11 @@ type AggregatorResponse struct {
 	validateResponse aggtypes.ValidatedResponse
 }
 
+// HandleSignatureCollectionRequest handles the signature collection request
 func (ar *AggregatorReactor) HandleSignatureCollectionRequest(requestHash avsitypes.DVSRequestHash) error {
 	ar.logger.Info("HandleSignatureCollectionRequest", "requestHash", requestHash)
 
+	// Get request from indexer
 	result, err := ar.dvsRequestIndexer.Get(requestHash)
 	if err != nil {
 		ar.logger.Error("AggregatorReactor: Get request from indexer failed", "error", err)

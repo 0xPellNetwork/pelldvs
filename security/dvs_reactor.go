@@ -33,6 +33,7 @@ type DVSReactor struct {
 	eventManager      *EventManager
 }
 
+// CreateDVSReactor creates a new DVSReactor instance
 func CreateDVSReactor(
 	config config.PellConfig,
 	proxyApp proxy.AppConns,
@@ -60,6 +61,7 @@ func CreateDVSReactor(
 	return dvs, nil
 }
 
+// SaveDVSRequestResult saves the DVS request result
 func (dvs *DVSReactor) SaveDVSRequestResult(res *avsitypes.DVSRequestResult, first bool) error {
 	if first {
 		rawBytesDvsRequest, err := proto.Marshal(res.DvsRequest)
@@ -78,6 +80,7 @@ func (dvs *DVSReactor) SaveDVSRequestResult(res *avsitypes.DVSRequestResult, fir
 	return dvs.dvsRequestIndexer.Index(res)
 }
 
+// HandleDVSRequest handles the DVS request
 func (dvs *DVSReactor) HandleDVSRequest(request avsitypes.DVSRequest) error {
 	dvs.logger.Info("dvsReactor.HandleDVSRequest", "request", request)
 
@@ -146,6 +149,7 @@ func (dvs *DVSReactor) HandleDVSRequest(request avsitypes.DVSRequest) error {
 	return nil
 }
 
+// OnRequestAfterAggregated is called after the request is aggregated
 func (dvs *DVSReactor) OnRequestAfterAggregated(requestHash avsitypes.DVSRequestHash, validatedResponse aggtypes.ValidatedResponse) error {
 	dvs.logger.Info("dvsReactor.OnRequestAfterAggregated", "requestHash", requestHash)
 

@@ -28,6 +28,7 @@ func (em *EventManager) SetAggregatorReactor(aggregatorReactor *AggregatorReacto
 	em.aggregatorReactor = aggregatorReactor
 }
 
+// StartListening starts listening to the event bus
 func (em *EventManager) StartListening() {
 	go func() {
 		requestCh := em.eventBus.Subscribe(types.CollectResponseSignatureRequest)
@@ -36,6 +37,7 @@ func (em *EventManager) StartListening() {
 		for {
 			select {
 			case event := <-requestCh:
+				// Handle CollectResponseSignatureRequest
 				if event.Type == types.CollectResponseSignatureRequest {
 					em.logger.Info("Received CollectResponseSignatureRequest")
 
@@ -48,6 +50,7 @@ func (em *EventManager) StartListening() {
 				}
 
 			case event := <-responseCh:
+				// Handle CollectResponseSignatureDone
 				if event.Type == types.CollectResponseSignatureDone {
 					em.logger.Info("Received CollectResponseSignatureDone")
 

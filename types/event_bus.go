@@ -11,7 +11,9 @@ type ReactorEventBus struct {
 
 // NewReactorEventBus creates a new ReactorEventBus.
 func NewReactorEventBus() *ReactorEventBus {
-	return &ReactorEventBus{}
+	return &ReactorEventBus{
+		channels: sync.Map{},
+	}
 }
 
 // Subscribe subscribes to a ReactorEventType and returns a channel that will receive ReactorEvents.

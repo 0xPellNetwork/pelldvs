@@ -4,23 +4,24 @@
 
 ### Features
 
-(feat) [#10](https://github.com/0xPellNetwork/pelldvs/pull/10) feat(rpc): allow querying by dvs.height 
-(feat) [#14](https://github.com/0xPellNetwork/pelldvs/pull/14) refactor: use interactor reader instead of aggregator interactor
-(feat) [#16](https://github.com/0xPellNetwork/pelldvs/pull/16) feat: add `client operator get-weight-for-group` cmd for getting weight for group.
-(test) [#17](https://github.com/0xPellNetwork/pelldvs/pull/17) test: improve test for stake and operator weight in e2e
+- (feat) [#10](https://github.com/0xPellNetwork/pelldvs/pull/10) feat(rpc): allow querying by dvs.height 
+- (feat) [#14](https://github.com/0xPellNetwork/pelldvs/pull/14) refactor: use interactor reader instead of aggregator interactor
+- (feat) [#16](https://github.com/0xPellNetwork/pelldvs/pull/16) feat: add `client operator get-weight-for-group` cmd for getting weight for group
+- (test) [#17](https://github.com/0xPellNetwork/pelldvs/pull/17) test: improve test for stake and operator weight in e2e
 
 ### Improvements
 
-(CI) [#7](https://github.com/0xPellNetwork/pelldvs/pull/7) ci: add changelog check in CI  
-(CI) [#11](https://github.com/0xPellNetwork/pelldvs/pull/11) ci: retrieve E2E port config from GitHub variables  
-(refactor) [#9](https://github.com/0xPellNetwork/pelldvs/pull/9) refactor: rename abci to avsi  
-(refactor) [#8](https://github.com/0xPellNetwork/pelldvs/pull/8) refactor: update private validator interface
-(fix) [#12](https://github.com/0xPellNetwork/pelldvs/pull/12) fix: task failure when aggregator result does not meet threshold
+- (CI) [#7](https://github.com/0xPellNetwork/pelldvs/pull/7) ci: add changelog check in CI  
+- (CI) [#11](https://github.com/0xPellNetwork/pelldvs/pull/11) ci: retrieve E2E port config from GitHub variables  
+- (refactor) [#9](https://github.com/0xPellNetwork/pelldvs/pull/9) refactor: rename abci to avsi  
+- (refactor) [#8](https://github.com/0xPellNetwork/pelldvs/pull/8) refactor: update private validator interface
+- (fix) [#12](https://github.com/0xPellNetwork/pelldvs/pull/12) fix: task failure when aggregator result does not meet threshold
+- (refactor) [#15](https://github.com/0xPellNetwork/pelldvs/pull/15) refactor: make aggregator reactor asynchronously handle requests
 
 ### Bug Fixes
 
-(dvs) [#6](https://github.com/0xPellNetwork/pelldvs/pull/6) fix: verify DVS request response digest length is 32 
-(cmd) [#13](https://github.com/0xPellNetwork/pelldvs/pull/13) fix: gen-validator show correct keypair info
+- (dvs) [#6](https://github.com/0xPellNetwork/pelldvs/pull/6) fix: verify DVS request response digest length is 32 
+- (cmd) [#13](https://github.com/0xPellNetwork/pelldvs/pull/13) fix: gen-validator show correct keypair info
 
 ## v0.2.2
 

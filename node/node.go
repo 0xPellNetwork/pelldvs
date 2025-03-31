@@ -48,10 +48,9 @@ type Node struct {
 	isListening bool
 
 	// services
-	// eventBus   *types.EventBus // pub/sub for services
-	proxyApp   proxy.AppConns // connection to the application
-	dvsReactor security.DVSReactor
-	aggregator aggregator.Aggregator
+	proxyApp          proxy.AppConns // connection to the application
+	dvsReactor        security.DVSReactor
+	aggregatorReactor *security.AggregatorReactor
 
 	rpcListeners []net.Listener // rpc servers
 	pexReactor   *pex.Reactor   // for exchanging peer addresses
@@ -230,28 +229,45 @@ func NewNodeWithContext(ctx context.Context,
 	// Add private IDs to addrbook to block those peers being added
 	addrBook.AddPrivateIDs(splitAndTrimEmpty(config.P2P.PrivatePeerIDs, ",", " "))
 
-	dvsReactor, err := security.CreateDVSReactor(*config.Pell, proxyApp, aggregator, config.RootDir+"/data/security_store",
-		dvsRequestIndexer, db, logger, privValidator)
+	// Initialize the DVS request store
+	storeDir := config.RootDir + "/data/security_store"
+	dvsReqStore, err := security.NewStore(storeDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create DVS request store: %v", err)
+	}
+
+	dvsState, err := security.NewDVSState(config.Pell, dvsReqStore, storeDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create DVS state: %v", err)
+	}
+
+	// Create the event manager
+	eventManager := security.NewEventManager(logger)
+
+	// Create the DVS and Aggregator reactors
+	dvsReactor, err := security.CreateDVSReactor(*config.Pell, proxyApp, dvsRequestIndexer, db, dvsState, logger, eventManager)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create dvsReactor: %w", err)
 	}
+	aggregatorReactor := security.CreateAggregatorReactor(aggregator, dvsRequestIndexer, privValidator, dvsState, logger, eventManager)
+
+	eventManager.SetDVSReactor(&dvsReactor)
+	eventManager.SetAggregatorReactor(aggregatorReactor)
+	eventManager.StartListening()
 
 	node := &Node{
-		config:    config,
-		transport: transport,
-		sw:        sw,
-		addrBook:  addrBook,
-		nodeInfo:  nodeInfo,
-		nodeKey:   nodeKey,
-		proxyApp:  proxyApp,
-
+		config:     config,
+		transport:  transport,
+		sw:         sw,
+		addrBook:   addrBook,
+		nodeInfo:   nodeInfo,
+		nodeKey:    nodeKey,
+		proxyApp:   proxyApp,
 		pexReactor: pexReactor,
 
 		dvsRequestIndexer: dvsRequestIndexer,
-		// eventBus:   eventBus,
-
-		aggregator: aggregator,
-		dvsReactor: dvsReactor,
+		dvsReactor:        dvsReactor,
+		aggregatorReactor: aggregatorReactor,
 	}
 	node.BaseService = *service.NewBaseService(logger, "Node", node)
 
@@ -370,8 +386,6 @@ func (n *Node) ConfigureRPC() (*rpccore.Environment, error) {
 		P2PTransport:  n,
 
 		DvsRequestIndexer: n.dvsRequestIndexer,
-
-		//EventBus:   n.eventBus,
 
 		Logger: n.Logger.With("module", "rpc"),
 
@@ -542,11 +556,6 @@ func (n *Node) startPprofServer() *http.Server {
 func (n *Node) Switch() *p2p.Switch {
 	return n.sw
 }
-
-// // EventBus returns the Node's EventBus.
-// func (n *Node) EventBus() *types.EventBus {
-// 	return n.eventBus
-// }
 
 // PrivValidator returns the Node's PrivValidator.
 // XXX: for convenience only!

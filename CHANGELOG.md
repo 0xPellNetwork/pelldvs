@@ -6,7 +6,7 @@
 
 - (feat) [#10](https://github.com/0xPellNetwork/pelldvs/pull/10) feat(rpc): allow querying by dvs.height 
 - (feat) [#14](https://github.com/0xPellNetwork/pelldvs/pull/14) refactor: use interactor reader instead of aggregator interactor
-- (feat) [#16](https://github.com/0xPellNetwork/pelldvs/pull/16) feat: add `client operator get-weight-for-group` cmd for getting weight for group.
+- (feat) [#16](https://github.com/0xPellNetwork/pelldvs/pull/16) feat: add `client operator get-weight-for-group` cmd for getting weight for group
 - (test) [#17](https://github.com/0xPellNetwork/pelldvs/pull/17) test: improve test for stake and operator weight in e2e
 
 ### Improvements

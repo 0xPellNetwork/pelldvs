@@ -1,9 +1,10 @@
 package types
 
 import (
-	"github.com/stretchr/testify/assert"
 	"sync"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 // TestNewReactorEventBus tests the creation of a new ReactorEventBus.

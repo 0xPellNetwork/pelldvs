@@ -23,6 +23,7 @@ import (
 	"github.com/0xPellNetwork/pelldvs/aggregator"
 	"github.com/0xPellNetwork/pelldvs/config"
 	"github.com/0xPellNetwork/pelldvs/libs/service"
+	rpctypes "github.com/0xPellNetwork/pelldvs/rpc/jsonrpc/types"
 )
 
 type DBContext struct {
@@ -238,9 +239,19 @@ func (ra *RPCServerAggregator) finalizeTask(taskID string) {
 
 	aggregatedResult, err := ra.aggregateSignatures(task)
 	if err != nil {
-		ra.Logger.Error("Failed to aggregate signatures", "error", err)
-		aggregatedResult = ra.createErrorValidatedResponse(taskID, err)
+		// Log with more context including the task ID
+		ra.Logger.Error("Failed to aggregate signatures",
+			"taskID", taskID,
+			"error", err)
+
+		// Create a more detailed error response with the original error message
+		aggregatedResult = ra.createErrorValidatedResponse(taskID, &rpctypes.RPCError{
+			Code:    -32000, // Use a more specific error code
+			Message: fmt.Sprintf("Failed to aggregate signatures: %v", err),
+			Data:    taskID, // Include task ID as context in the error data
+		})
 	}
+
 	for operatorID := range task.operatorResponses {
 		task.done <- *aggregatedResult
 		ra.Logger.Info("Task finalizeTask task.done for", "taskID", taskID, "operatorID", operatorID)
@@ -254,7 +265,7 @@ func (ra *RPCServerAggregator) finalizeTask(taskID string) {
 	ra.Logger.Info("Task deleted", "taskID", taskID)
 }
 
-func (ra *RPCServerAggregator) createErrorValidatedResponse(taskID string, err error) *aggregator.ValidatedResponse {
+func (ra *RPCServerAggregator) createErrorValidatedResponse(taskID string, err *rpctypes.RPCError) *aggregator.ValidatedResponse {
 	return &aggregator.ValidatedResponse{
 		Data:                        []byte{},
 		Err:                         err,

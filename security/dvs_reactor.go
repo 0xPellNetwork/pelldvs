@@ -153,9 +153,32 @@ func (dvs *DVSReactor) HandleDVSRequest(request avsitypes.DVSRequest) error {
 func (dvs *DVSReactor) OnRequestAfterAggregated(requestHash avsitypes.DVSRequestHash, validatedResponse aggtypes.ValidatedResponse) error {
 	dvs.logger.Info("dvsReactor.OnRequestAfterAggregated", "requestHash", requestHash)
 
+	// Query request result
+	result, err := dvs.dvsRequestIndexer.Get(requestHash)
+	if err != nil {
+		dvs.logger.Error("dvsReactor.dvsindex.Get", "err", err.Error())
+		return err
+	}
+
+	// If validatedResponse has an error, handle it appropriately
 	if validatedResponse.Err != nil {
-		dvs.logger.Error("Aggregator returned an error", "error", validatedResponse.Err)
-		return validatedResponse.Err
+		errorMsg := validatedResponse.Err.Error()
+		dvs.logger.Error("Aggregation validation failed",
+			"requestHash", requestHash,
+			"error", errorMsg)
+
+		// Create error response
+		result.DvsResponse = &avsitypes.DVSResponse{
+			Error: errorMsg,
+		}
+
+		// Save result with error
+		if err := dvs.SaveDVSRequestResult(result, false); err != nil {
+			return fmt.Errorf("failed to save error response: %w", err)
+		}
+
+		// Return the original validation error to propagate it upward
+		return fmt.Errorf("request validation failed: %w", validatedResponse.Err)
 	}
 
 	// Build dvs response
@@ -189,14 +212,7 @@ func (dvs *DVSReactor) OnRequestAfterAggregated(requestHash avsitypes.DVSRequest
 		NonSignerStakeIndices:       indices,
 	}
 
-	// Query request result
-	result, err := dvs.dvsRequestIndexer.Get(requestHash)
-	if err != nil {
-		dvs.logger.Error("dvsReactor.dvsindex.Get", "err", err.Error())
-		return err
-	}
-
-	// Third save the request
+	// Third save the request, if the validatedResponse has no error
 	result.DvsResponse = &dvsResponse
 	if err := dvs.SaveDVSRequestResult(result, false); err != nil {
 		dvs.logger.Error("dvsReactor.dvsindex.Index dvsResponseIdx", "err", err.Error())

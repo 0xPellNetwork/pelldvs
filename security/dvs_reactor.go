@@ -6,7 +6,6 @@ import (
 	"math/big"
 
 	dbm "github.com/cometbft/cometbft-db"
-	"github.com/cosmos/gogoproto/proto"
 
 	"github.com/0xPellNetwork/pelldvs-interactor/interactor/reader"
 	evmtypes "github.com/0xPellNetwork/pelldvs-interactor/types"
@@ -64,11 +63,7 @@ func CreateDVSReactor(
 // SaveDVSRequestResult saves the DVS request result
 func (dvs *DVSReactor) SaveDVSRequestResult(res *avsitypes.DVSRequestResult, first bool) error {
 	if first {
-		rawBytesDvsRequest, err := proto.Marshal(res.DvsRequest)
-		if err != nil {
-			return err
-		}
-		hash := types.DvsRequest(rawBytesDvsRequest).Hash()
+		hash := res.DvsRequest.Hash()
 		old, err := dvs.dvsRequestIndexer.Get(hash)
 		if err != nil {
 			return err

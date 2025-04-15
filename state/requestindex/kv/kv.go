@@ -91,11 +91,8 @@ func (dvsReqIdx *DvsRequestIndex) AddBatch(batch *requestindex.Batch) error {
 	defer storeBatch.Close()
 
 	for _, result := range batch.Ops {
-		rawBytesDvsRequest, err := proto.Marshal(result.DvsRequest)
-		if err != nil {
-			return err
-		}
-		hash := types.DvsRequest(rawBytesDvsRequest).Hash()
+		var err error
+		hash := result.DvsRequest.Hash()
 
 		if result.ResponseProcessDvsRequest != nil {
 			// index DVS Request by events
@@ -137,12 +134,8 @@ func (dvsReqIdx *DvsRequestIndex) Index(result *avsi.DVSRequestResult) error {
 	batch := dvsReqIdx.store.NewBatch()
 	defer batch.Close()
 
-	rawBytesDvsRequest, err := proto.Marshal(result.DvsRequest)
-	if err != nil {
-		return err
-	}
-
-	hash := types.DvsRequest(rawBytesDvsRequest).Hash()
+	var err error
+	hash := result.DvsRequest.Hash()
 
 	if result.ResponseProcessDvsRequest != nil {
 		// index DVS Request by events

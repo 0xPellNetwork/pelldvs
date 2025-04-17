@@ -23,11 +23,8 @@ import (
 	avsitypes "github.com/0xPellNetwork/pelldvs/avsi/types"
 	"github.com/0xPellNetwork/pelldvs/config"
 	"github.com/0xPellNetwork/pelldvs/libs/service"
+	"github.com/0xPellNetwork/pelldvs/rpc/core/errcode"
 	rpctypes "github.com/0xPellNetwork/pelldvs/rpc/jsonrpc/types"
-)
-
-const (
-	RPCErrorCodeAggregatored int = 32000
 )
 
 type DBContext struct {
@@ -249,7 +246,7 @@ func (ra *RPCServerAggregator) finalizeTask(taskID string) {
 
 		// Create a more detailed error response with the original error message
 		aggregatedResult = ra.createErrorValidatedResponse(taskID, &rpctypes.RPCError{
-			Code:    RPCErrorCodeAggregatored, // Use a more specific error code
+			Code:    errcode.AggregationFailed, // Use a more specific error code
 			Message: fmt.Sprintf("Failed to aggregate signatures: %v", err),
 			Data:    taskID, // Include task ID as context in the error data
 		})

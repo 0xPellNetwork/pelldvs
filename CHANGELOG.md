@@ -17,6 +17,7 @@
 - (refactor) [#8](https://github.com/0xPellNetwork/pelldvs/pull/8) refactor: update private validator interface
 - (fix) [#12](https://github.com/0xPellNetwork/pelldvs/pull/12) fix: task failure when aggregator result does not meet threshold
 - (refactor) [#15](https://github.com/0xPellNetwork/pelldvs/pull/15) refactor: make aggregator reactor asynchronously handle requests
+- (feat) [#19](https://github.com/0xPellNetwork/pelldvs/pull/19) feat: DVS will save aggregated response with error message
 
 ### Bug Fixes
 

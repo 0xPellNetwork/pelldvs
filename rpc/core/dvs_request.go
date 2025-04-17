@@ -5,8 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/cosmos/gogoproto/proto"
-
 	avsiTypes "github.com/0xPellNetwork/pelldvs/avsi/types"
 	"github.com/0xPellNetwork/pelldvs/libs/bytes"
 	cmtmath "github.com/0xPellNetwork/pelldvs/libs/math"
@@ -14,7 +12,6 @@ import (
 	ctypes "github.com/0xPellNetwork/pelldvs/rpc/core/types"
 	rpctypes "github.com/0xPellNetwork/pelldvs/rpc/jsonrpc/types"
 	"github.com/0xPellNetwork/pelldvs/state/requestindex/null"
-	"github.com/0xPellNetwork/pelldvs/types"
 )
 
 func (env *Environment) RequestDVS(ctx *rpctypes.Context,
@@ -135,12 +132,7 @@ func (env *Environment) SearchRequest(
 	apiResults := make([]*ctypes.ResultDvsRequest, 0, pageSize)
 	for i := skipCount; i < skipCount+pageSize; i++ {
 		r := results[i]
-
-		rawBytesDvsRequest, err := proto.Marshal(r.DvsRequest)
-		if err != nil {
-			return nil, err
-		}
-		hash := types.DvsRequest(rawBytesDvsRequest).Hash()
+		hash := []byte(r.DvsRequest.Hash())
 
 		apiResults = append(apiResults, &ctypes.ResultDvsRequest{
 			DvsRequest:                 r.DvsRequest,

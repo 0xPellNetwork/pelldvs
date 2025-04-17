@@ -2,7 +2,6 @@ package rpc
 
 import (
 	"context"
-	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -21,8 +20,11 @@ import (
 	"github.com/0xPellNetwork/pelldvs-libs/crypto/bls"
 	"github.com/0xPellNetwork/pelldvs-libs/log"
 	"github.com/0xPellNetwork/pelldvs/aggregator"
+	avsitypes "github.com/0xPellNetwork/pelldvs/avsi/types"
 	"github.com/0xPellNetwork/pelldvs/config"
 	"github.com/0xPellNetwork/pelldvs/libs/service"
+	"github.com/0xPellNetwork/pelldvs/rpc/core/errcode"
+	rpctypes "github.com/0xPellNetwork/pelldvs/rpc/jsonrpc/types"
 )
 
 type DBContext struct {
@@ -203,9 +205,8 @@ func (ra *RPCServerAggregator) CollectResponseSignature(response *aggregator.Res
 	return nil
 }
 
-func (ra *RPCServerAggregator) generateTaskID(request interface{}) string {
-	hash := sha256.Sum256([]byte(fmt.Sprintf("%v", request)))
-	return hex.EncodeToString(hash[:])
+func (ra *RPCServerAggregator) generateTaskID(request avsitypes.DVSRequest) string {
+	return hex.EncodeToString(request.Hash())
 }
 
 func (ra *RPCServerAggregator) processResponses(task *Task) {
@@ -238,9 +239,19 @@ func (ra *RPCServerAggregator) finalizeTask(taskID string) {
 
 	aggregatedResult, err := ra.aggregateSignatures(task)
 	if err != nil {
-		ra.Logger.Error("Failed to aggregate signatures", "error", err)
-		aggregatedResult = ra.createErrorValidatedResponse(taskID, err)
+		// Log with more context including the task ID
+		ra.Logger.Error("Failed to aggregate signatures",
+			"taskID", taskID,
+			"error", err)
+
+		// Create a more detailed error response with the original error message
+		aggregatedResult = ra.createErrorValidatedResponse(taskID, &rpctypes.RPCError{
+			Code:    errcode.AggregationFailed, // Use a more specific error code
+			Message: fmt.Sprintf("Failed to aggregate signatures: %v", err),
+			Data:    taskID, // Include task ID as context in the error data
+		})
 	}
+
 	for operatorID := range task.operatorResponses {
 		task.done <- *aggregatedResult
 		ra.Logger.Info("Task finalizeTask task.done for", "taskID", taskID, "operatorID", operatorID)
@@ -254,7 +265,7 @@ func (ra *RPCServerAggregator) finalizeTask(taskID string) {
 	ra.Logger.Info("Task deleted", "taskID", taskID)
 }
 
-func (ra *RPCServerAggregator) createErrorValidatedResponse(taskID string, err error) *aggregator.ValidatedResponse {
+func (ra *RPCServerAggregator) createErrorValidatedResponse(taskID string, err *rpctypes.RPCError) *aggregator.ValidatedResponse {
 	return &aggregator.ValidatedResponse{
 		Data:                        []byte{},
 		Err:                         err,

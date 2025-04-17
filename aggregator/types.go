@@ -3,6 +3,7 @@ package aggregator
 import (
 	"github.com/0xPellNetwork/pelldvs-libs/crypto/bls"
 	avsitypes "github.com/0xPellNetwork/pelldvs/avsi/types"
+	rpctypes "github.com/0xPellNetwork/pelldvs/rpc/jsonrpc/types"
 )
 
 type Aggregator interface {
@@ -20,7 +21,7 @@ type ResponseWithSignature struct {
 
 type ValidatedResponse struct {
 	Data                        []byte
-	Err                         error
+	Err                         *rpctypes.RPCError
 	Hash                        []byte
 	NonSignersPubkeysG1         []*bls.G1Point
 	GroupApksG1                 []*bls.G1Point

@@ -18,7 +18,7 @@ func TestNewReactorEventBus(t *testing.T) {
 func TestSubscribe(t *testing.T) {
 	eventBus := NewReactorEventBus()
 	eventType := ReactorEventType("test_event")
-	ch := eventBus.Subscribe(eventType)
+	ch := eventBus.Sub(eventType)
 	assert.NotNil(t, ch)
 }
 
@@ -26,10 +26,10 @@ func TestSubscribe(t *testing.T) {
 func TestPublish(t *testing.T) {
 	eventBus := NewReactorEventBus()
 	eventType := ReactorEventType("test_event")
-	ch := eventBus.Subscribe(eventType)
+	ch := eventBus.Sub(eventType)
 
 	payload := "test_payload"
-	eventBus.Publish(eventType, payload)
+	eventBus.Pub(eventType, payload)
 
 	event := <-ch
 	assert.Equal(t, eventType, event.Type)
@@ -42,7 +42,7 @@ func TestPublishWithoutSubscribers(t *testing.T) {
 	eventType := ReactorEventType("test_event")
 
 	// Publish without any subscribers
-	eventBus.Publish(eventType, "test_payload")
+	eventBus.Pub(eventType, "test_payload")
 
 	// Ensure no panic or error occurs
 	assert.True(t, true)

@@ -1,3 +1,5 @@
+// Package security provides functionality for managing the security aspects
+// of the distributed validation system, including request storage and operator state
 package security
 
 import (
@@ -11,61 +13,72 @@ import (
 	"github.com/0xPellNetwork/pelldvs/types"
 )
 
-type DVSReqStore interface {
-	SaveReq(req *DVSReqResponse) error
-	GetReq(id string) (*RequestProcessRequest, error)
+// RequestStore defines the interface for storing and retrieving DVS requests
+// providing persistence capabilities for the validation system
+type RequestStore interface {
+	StoreRequest(req *DVSReqResponse) error
+	FetchRequest(id string) (*RequestProcessRequest, error)
 }
 
+// DVSState maintains the current state of a DVS node,
+// including operator identity and request storage
 type DVSState struct {
-	operatorID  types.OperatorID
-	dvsReqStore DVSReqStore
+	operatorID   types.OperatorID
+	requestStore RequestStore
 }
 
-// NewDVSState creates a new DVSState instance
-func NewDVSState(cfg *config.PellConfig, dvsReqStore DVSReqStore, storeDir string) (*DVSState, error) {
-	// get operator address
+// NewDVSState creates a new DVSState instance initialized with
+// the operator's identity and a storage implementation
+func NewDVSState(cfg *config.PellConfig, requestStore RequestStore, storeDir string) (*DVSState, error) {
+	// Get operator address from the ECDSA private key
 	operatorAddress, err := ecdsa.GetAddressFromKeyStoreFile(cfg.OperatorECDSAPrivateKeyStorePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get operator address: %v", err)
 	}
 
-	// generate operatorID
-	operatorID := types.GenOperatorIDByAddress(operatorAddress)
+	// Generate operator ID from the address
+	operatorID := types.OperatorIDFromAddress(operatorAddress)
 
-	// If no dvsReqStore is provided, create a local storage implementation
-	if dvsReqStore == nil {
+	// If no requestStore is provided, create a local storage implementation
+	if requestStore == nil {
 		var err error
-		dvsReqStore, err = NewStore(storeDir)
+		requestStore, err = NewPersistentStore(storeDir)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create DVS request store: %v", err)
 		}
 	}
 
 	return &DVSState{
-		operatorID:  operatorID,
-		dvsReqStore: dvsReqStore,
+		operatorID:   operatorID,
+		requestStore: requestStore,
 	}, nil
 }
 
-func (dvsState *DVSState) SaveReq(req *DVSReqResponse) error {
-	return dvsState.dvsReqStore.SaveReq(req)
+// StoreRequest delegates the request saving operation to the underlying store
+func (dvsState *DVSState) StoreRequest(req *DVSReqResponse) error {
+	return dvsState.requestStore.StoreRequest(req)
 }
 
-// Store represents the persistent storage for DVS requests
-type Store struct {
+// PersistentStore implements RequestStore using a persistent database backend
+// for reliable storage of DVS requests and responses
+type PersistentStore struct {
 	db dbm.DB
 }
 
-// NewStore creates a new Store instance
-func NewStore(dir string) (*Store, error) {
-	db, err := dbm.NewDB("dvs_req_store", "goleveldb", dir)
+// NewPersistentStore creates a new PersistentStore instance with a LevelDB backend
+// in the specified directory
+func NewPersistentStore(dir string) (*PersistentStore, error) {
+	db, err := dbm.NewDB("dvs_req_store", dbm.GoLevelDBBackend, dir)
 	if err != nil {
 		return nil, err
 	}
-	return &Store{db: db}, nil
+
+	return &PersistentStore{db: db}, nil
 }
 
-func (s *Store) SaveReq(req *DVSReqResponse) error {
+// StoreRequest persists a DVS request and its response to the database
+// using the request data as the key
+func (s *PersistentStore) StoreRequest(req *DVSReqResponse) error {
 	key := []byte(fmt.Sprintf("%x", req.Request.Data))
 	value, err := json.Marshal(req)
 	if err != nil {
@@ -75,12 +88,15 @@ func (s *Store) SaveReq(req *DVSReqResponse) error {
 	if err != nil {
 		return fmt.Errorf("failed to save request: %v", err)
 	}
+
 	fmt.Printf("Request successfully stored. Key: %x, Value: %s\n", key, string(value))
 	fmt.Printf("Request details - Data: %x, Response Hash: %x\n", req.Request.Data, req.Response.Hash)
 	return nil
 }
 
-func (s *Store) GetReq(id string) (*RequestProcessRequest, error) {
+// FetchRequest retrieves a previously stored request from the database
+// based on the provided identifier
+func (s *PersistentStore) FetchRequest(id string) (*RequestProcessRequest, error) {
 	key := []byte(id)
 	value, err := s.db.Get(key)
 	if err != nil {

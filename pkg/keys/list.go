@@ -154,7 +154,7 @@ func GetIDFromBLSPubKey(pubKey string) (string, error) {
 		},
 	}
 
-	id := types.GenOperatorIDOffChain(point)
+	id := types.OperatorIDFromBLSKey(point)
 
 	return id.LogValue().String(), nil
 }

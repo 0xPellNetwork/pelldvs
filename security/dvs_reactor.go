@@ -140,7 +140,7 @@ func (dvs *DVSReactor) HandleDVSRequest(request avsitypes.DVSRequest) error {
 		return err
 	}
 
-	dvs.eventManager.eventBus.Publish(types.CollectResponseSignatureRequest, request.Hash())
+	dvs.eventManager.eventBus.Pub(types.CollectResponseSignatureRequest, request.Hash())
 	return nil
 }
 

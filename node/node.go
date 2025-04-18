@@ -231,7 +231,7 @@ func NewNodeWithContext(ctx context.Context,
 
 	// Initialize the DVS request store
 	storeDir := config.RootDir + "/data/security_store"
-	dvsReqStore, err := security.NewStore(storeDir)
+	dvsReqStore, err := security.NewPersistentStore(storeDir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create DVS request store: %v", err)
 	}

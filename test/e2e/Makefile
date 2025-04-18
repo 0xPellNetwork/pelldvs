@@ -3,11 +3,11 @@ COMETBFT_BUILD_OPTIONS += badgerdb,boltdb,cleveldb,rocksdb
 include ../../common.mk
 
 check-env-gh-token:
-	@if [ -z "$${GITHUB_TOKEN}" ] ; then \
-		echo "Error: GITHUB_TOKEN is not set in environment"; \
+	@if [ -z "$${GH_TOKEN}" ] ; then \
+		echo "Error: GH_TOKEN is not set in environment"; \
 		exit 1; \
 	else \
-		echo "GITHUB_TOKEN is set."; \
+		echo "GH_TOKEN is set."; \
 	fi
 
 all: generator runner

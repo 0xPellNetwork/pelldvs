@@ -43,7 +43,7 @@ jobs:
           password: ${{ secrets.DOCKER_TOKEN }}
 
       - name: Build and Push
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ./test/e2e
           file: ./test/e2e/docker/contracts/Dockerfile

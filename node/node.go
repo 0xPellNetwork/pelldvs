@@ -249,7 +249,7 @@ func NewNodeWithContext(ctx context.Context,
 	if err != nil {
 		return nil, fmt.Errorf("failed to create dvsReactor: %w", err)
 	}
-	aggregatorReactor := security.CreateAggregatorReactor(aggregator, dvsRequestIndexer, privValidator, dvsState, logger, eventManager)
+	aggregatorReactor := security.NewAggregatorReactor(aggregator, dvsRequestIndexer, privValidator, dvsState, logger, eventManager)
 
 	eventManager.SetDVSReactor(&dvsReactor)
 	eventManager.SetAggregatorReactor(aggregatorReactor)

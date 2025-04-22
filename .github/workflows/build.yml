@@ -7,6 +7,7 @@ on:
   push:
     branches:
       - dev
+      - test-ci
 jobs:
   build:
     name: Build

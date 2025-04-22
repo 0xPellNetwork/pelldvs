@@ -7,11 +7,10 @@ on:
   push:
     branches:
       - dev
-      - test-ci
 jobs:
   build:
     name: Build
-    runs-on: ["self-hosted", "Linux", "X64", "ci", "test"]
+    runs-on: ["self-hosted", "Linux", "X64", "ci"]
     strategy:
       fail-fast: false
       matrix:

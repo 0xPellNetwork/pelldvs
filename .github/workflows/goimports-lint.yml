@@ -11,7 +11,7 @@ jobs:
   generate-check:
     name: Verify
 #     runs-on: [ "self-hosted", "Linux", "X64", "ci", "test" ]
-    runs-on: [ "self-hosted", "macOS", "X64", "ci", "test" ]
+    runs-on: [ "self-hosted", "macOS", "X64", "test" ]
     env:
       GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
     steps:

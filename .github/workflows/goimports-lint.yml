@@ -10,8 +10,9 @@ on:
 jobs:
   generate-check:
     name: Verify
-#     runs-on: [ "self-hosted", "Linux", "X64", "ci", "test" ]
-    runs-on: ["test" ]
+    runs-on:
+        labels: [ "self-hosted", "Linux", "X64", "ci"]
+        group: dvs
     env:
       GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
     steps:

@@ -27,21 +27,26 @@ import (
 	rpctypes "github.com/0xPellNetwork/pelldvs/rpc/jsonrpc/types"
 )
 
+// DBContext holds the necessary information for initializing a database
+// including configuration and identifier
 type DBContext struct {
 	ID     string
 	Config *config.Config
 }
 
-// DBProvider takes a DBContext and returns an instantiated DB.
+// DBProvider defines a function type that creates and returns a database
+// based on the provided context
 type DBProvider func(*DBContext) (dbm.DB, error)
 
-// DefaultDBProvider returns a database using the DBBackend and DBDir
-// specified in the ctx.Config.
+// DefaultDBProvider creates a database using the configuration specified in the context
+// implementing the standard database initialization process
 func DefaultDBProvider(ctx *DBContext) (dbm.DB, error) {
 	dbType := dbm.BackendType(ctx.Config.DBBackend)
 	return dbm.NewDB(ctx.ID, dbType, ctx.Config.DBDir())
 }
 
+// NewRPCServerAggregator creates a new instance of the RPC server aggregator
+// initializing all required components and connections
 func NewRPCServerAggregator(
 	ctx context.Context,
 	cfg *config.Config,
@@ -85,6 +90,8 @@ func NewRPCServerAggregator(
 	return ra, nil
 }
 
+// OnStart initializes and starts the RPC server
+// registering handlers and beginning to accept connections
 func (ra *RPCServerAggregator) OnStart() error {
 	if err := ra.server.Register(ra); err != nil {
 		return fmt.Errorf("failed to register RPC handler: %v", err)
@@ -102,16 +109,22 @@ func (ra *RPCServerAggregator) OnStart() error {
 	return nil
 }
 
+// IsRunning checks if the server is currently running
+// implementing the service interface requirement
 func (ra *RPCServerAggregator) IsRunning() bool {
 	return ra.BaseService.IsRunning()
 }
 
+// OnStop gracefully shuts down the RPC server
+// closing the network listener
 func (ra *RPCServerAggregator) OnStop() {
 	if ra.listener != nil {
 		ra.listener.Close()
 	}
 }
 
+// CollectResponseSignature processes operator signature submissions
+// creating or updating tasks and managing the aggregation process
 func (ra *RPCServerAggregator) CollectResponseSignature(response *aggregator.ResponseWithSignature, result *aggregator.ValidatedResponse) error {
 	taskID := ra.generateTaskID(response.RequestData)
 	ra.Logger.Info("CollectResponseSignature start",

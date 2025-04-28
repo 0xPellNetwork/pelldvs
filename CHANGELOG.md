@@ -4,7 +4,7 @@
 
 ### Features
 
-- (feat) [#10](https://github.com/0xPellNetwork/pelldvs/pull/10) feat(rpc): allow querying by dvs.height 
+- (feat) [#10](https://github.com/0xPellNetwork/pelldvs/pull/10) feat(rpc): allow querying by dvs.height
 - (feat) [#14](https://github.com/0xPellNetwork/pelldvs/pull/14) refactor: use interactor reader instead of aggregator interactor
 - (feat) [#16](https://github.com/0xPellNetwork/pelldvs/pull/16) feat: add `client operator get-weight-for-group` cmd for getting weight for group
 - (test) [#17](https://github.com/0xPellNetwork/pelldvs/pull/17) test: improve test for stake and operator weight in e2e
@@ -18,10 +18,11 @@
 - (fix) [#12](https://github.com/0xPellNetwork/pelldvs/pull/12) fix: task failure when aggregator result does not meet threshold
 - (refactor) [#15](https://github.com/0xPellNetwork/pelldvs/pull/15) refactor: make aggregator reactor asynchronously handle requests
 - (feat) [#19](https://github.com/0xPellNetwork/pelldvs/pull/19) feat: DVS will save aggregated response with error message
+- (refactor) [#24](https://github.com/0xPellNetwork/pelldvs/pull/24) refactor: security and types module
 
 ### Bug Fixes
 
-- (dvs) [#6](https://github.com/0xPellNetwork/pelldvs/pull/6) fix: verify DVS request response digest length is 32 
+- (dvs) [#6](https://github.com/0xPellNetwork/pelldvs/pull/6) fix: verify DVS request response digest length is 32
 - (cmd) [#13](https://github.com/0xPellNetwork/pelldvs/pull/13) fix: gen-validator show correct keypair info
 
 ## v0.2.2

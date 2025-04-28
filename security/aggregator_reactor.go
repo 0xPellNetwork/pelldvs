@@ -24,12 +24,9 @@ type AggregatorReactor struct {
 	eventManager      *EventManager                  // Manages event publishing
 }
 
-// NewAggregatorReactor initializes and returns a new AggregatorReactor instance
-// with all necessary dependencies for signature collection and aggregation
-func NewAggregatorReactor(
-// CreateAggregatorReactor initializes a new AggregatorReactor with all required dependencies
+// NewAggregatorReactor initializes a new AggregatorReactor with all required dependencies
 // to handle signature collection and aggregation operations
-func CreateAggregatorReactor(
+func NewAggregatorReactor(
 	aggregator aggtypes.Aggregator,
 	dvsRequestIndexer requestindex.DvsRequestIndexer,
 	privValidator types.PrivValidator,
@@ -86,11 +83,6 @@ func (ar *AggregatorReactor) HandleSignatureCollectionRequest(requestHash avsity
 			G1Affine: signature.G1Affine,
 		},
 	}
-	// Convert the signature to the required BLS format
-	sig := bls.Signature{G1Point: &bls.G1Point{
-		G1Affine: signature.G1Affine,
-	}}
-
 	// Package response with signature and metadata
 	// Create a response with signature object for aggregation
 	responseWithSignature := aggtypes.ResponseWithSignature{
@@ -108,10 +100,6 @@ func (ar *AggregatorReactor) HandleSignatureCollectionRequest(requestHash avsity
 	if err := ar.aggregator.CollectResponseSignature(&responseWithSignature, validatedResponseCh); err != nil {
 		ar.logger.Error("Failed to submit signature to aggregator", "error", err)
 		return fmt.Errorf("signature submission failed: %w", err)
-	// Send response signature to aggregator and wait for result
-	if err = ar.aggregator.CollectResponseSignature(&responseWithSignature, validatedResponseCh); err != nil {
-		ar.logger.Error("Failed to send response signature to aggregator", "error", err)
-		return fmt.Errorf("failed to send response signature to aggregator: %v", err)
 	}
 
 	// Receive validation result and publish completion event
@@ -120,7 +108,7 @@ func (ar *AggregatorReactor) HandleSignatureCollectionRequest(requestHash avsity
 		requestHash:      requestHash,
 		validateResponse: <-validatedResponseCh,
 	}
-	ar.eventManager.eventBus.Publish(types.CollectResponseSignatureDone, aggregatedResponse)
+	ar.eventManager.eventBus.Pub(types.CollectResponseSignatureDone, aggregatedResponse)
 
 	ar.logger.Debug("Signature collection request completed successfully", "requestHash", requestHash)
 

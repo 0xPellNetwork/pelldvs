@@ -5,7 +5,7 @@ on:
       - 'proto/**'
   push:
     branches:
-      - dev
+      - main
     paths:
       - 'proto/**'
 jobs:

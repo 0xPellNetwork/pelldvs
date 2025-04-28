@@ -8,14 +8,14 @@ permissions:
 on:
   push:
     branches:
-      - dev
+      - main
     paths:
       - "**.md"
       - "**.yml"
       - "**.yaml"
   pull_request:
     branches:
-      - dev
+      - main
     paths:
       - "**.md"
       - "**.yml"

@@ -5,16 +5,16 @@ on:
       - 'proto/**'
   push:
     branches:
-      - dev
+      - main
     paths:
       - 'proto/**'
 jobs:
   lint:
-    runs-on: ["self-hosted", "Linux", "X64", "ci"]
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - uses: bufbuild/buf-setup-action@v1.45.0
+      - uses: bufbuild/buf-setup-action@v1.50.0
       - uses: bufbuild/buf-lint-action@v1
         with:
           input: 'proto'

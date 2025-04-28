@@ -6,10 +6,10 @@ on:
   pull_request:
   push:
     branches:
-      - dev
+      - main
 jobs:
   e2e-test:
-    runs-on: [ "self-hosted", "Linux", "X64", "ci" ]
+    runs-on: ubuntu-latest
     timeout-minutes: 40
     env:
       GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}

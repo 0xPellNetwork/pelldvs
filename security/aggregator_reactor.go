@@ -13,6 +13,8 @@ import (
 
 // AggregatorReactor handles the process of collecting and aggregating signatures
 // for distributed validation system (DVS) requests
+// AggregatorReactor handles the collection and aggregation of response signatures
+// from operators, interfacing between the DVS system and the aggregator service
 type AggregatorReactor struct {
 	aggregator        aggtypes.Aggregator            // Performs signature aggregation
 	dvsRequestIndexer requestindex.DvsRequestIndexer // Indexes and retrieves DVS requests
@@ -25,6 +27,9 @@ type AggregatorReactor struct {
 // NewAggregatorReactor initializes and returns a new AggregatorReactor instance
 // with all necessary dependencies for signature collection and aggregation
 func NewAggregatorReactor(
+// CreateAggregatorReactor initializes a new AggregatorReactor with all required dependencies
+// to handle signature collection and aggregation operations
+func CreateAggregatorReactor(
 	aggregator aggtypes.Aggregator,
 	dvsRequestIndexer requestindex.DvsRequestIndexer,
 	privValidator types.PrivValidator,
@@ -44,6 +49,8 @@ func NewAggregatorReactor(
 
 // AggregatorResponse encapsulates the result of a signature aggregation process,
 // containing both the original request hash and the validated response
+// AggregatorResponse encapsulates the result of an aggregation operation,
+// containing both the original request hash and the validated response
 type AggregatorResponse struct {
 	requestHash      avsitypes.DVSRequestHash   // Hash of the original DVS request
 	validateResponse aggtypes.ValidatedResponse // Aggregated and validated response
@@ -51,6 +58,9 @@ type AggregatorResponse struct {
 
 // HandleSignatureCollectionRequest processes a signature collection request by retrieving
 // the original request, signing it, and submitting it to the aggregator
+// HandleSignatureCollectionRequest processes a signature collection request
+// by retrieving the original request, signing the response, and submitting it
+// to the aggregator for collection and validation
 func (ar *AggregatorReactor) HandleSignatureCollectionRequest(requestHash avsitypes.DVSRequestHash) error {
 	ar.logger.Info("Processing signature collection request", "requestHash", requestHash)
 
@@ -62,6 +72,7 @@ func (ar *AggregatorReactor) HandleSignatureCollectionRequest(requestHash avsity
 	}
 
 	// Extract response data and generate signature
+	// Extract the response and sign its digest
 	response := result.ResponseProcessDvsRequest
 	signature, err := ar.privValidator.SignBytes(response.ResponseDigest)
 	if err != nil {
@@ -75,8 +86,13 @@ func (ar *AggregatorReactor) HandleSignatureCollectionRequest(requestHash avsity
 			G1Affine: signature.G1Affine,
 		},
 	}
+	// Convert the signature to the required BLS format
+	sig := bls.Signature{G1Point: &bls.G1Point{
+		G1Affine: signature.G1Affine,
+	}}
 
 	// Package response with signature and metadata
+	// Create a response with signature object for aggregation
 	responseWithSignature := aggtypes.ResponseWithSignature{
 		Data:        response.Response,
 		Signature:   blsSig,
@@ -92,9 +108,14 @@ func (ar *AggregatorReactor) HandleSignatureCollectionRequest(requestHash avsity
 	if err := ar.aggregator.CollectResponseSignature(&responseWithSignature, validatedResponseCh); err != nil {
 		ar.logger.Error("Failed to submit signature to aggregator", "error", err)
 		return fmt.Errorf("signature submission failed: %w", err)
+	// Send response signature to aggregator and wait for result
+	if err = ar.aggregator.CollectResponseSignature(&responseWithSignature, validatedResponseCh); err != nil {
+		ar.logger.Error("Failed to send response signature to aggregator", "error", err)
+		return fmt.Errorf("failed to send response signature to aggregator: %v", err)
 	}
 
 	// Receive validation result and publish completion event
+	// Create an aggregator response with the validated result
 	aggregatedResponse := AggregatorResponse{
 		requestHash:      requestHash,
 		validateResponse: <-validatedResponseCh,
@@ -102,5 +123,8 @@ func (ar *AggregatorReactor) HandleSignatureCollectionRequest(requestHash avsity
 	ar.eventManager.eventBus.Publish(types.CollectResponseSignatureDone, aggregatedResponse)
 
 	ar.logger.Debug("Signature collection request completed successfully", "requestHash", requestHash)
+
+	// Publish the completion event with the aggregated response
+	ar.eventManager.eventBus.Pub(types.CollectResponseSignatureDone, aggregatedResponse)
 	return nil
 }

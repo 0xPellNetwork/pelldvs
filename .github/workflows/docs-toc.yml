@@ -4,10 +4,10 @@ on:
   pull_request:
     push:
       branches:
-        - dev
+        - main
 jobs:
   check:
-    runs-on: [ "self-hosted", "Linux", "X64", "ci" ]
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4

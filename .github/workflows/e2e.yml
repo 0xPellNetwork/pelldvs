@@ -9,7 +9,7 @@ on:
       - dev
 jobs:
   e2e-test:
-    runs-on: [ "self-hosted", "Linux", "X64", "ci" ]
+    runs-on: [  "Linux", "X64", "ci" ]
     timeout-minutes: 40
     env:
       GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}

@@ -11,7 +11,7 @@ on:
       - dev
 jobs:
   govulncheck:
-    runs-on: [ "self-hosted", "Linux", "X64", "ci" ]
+    runs-on: [  "Linux", "X64", "ci" ]
     timeout-minutes: 20
     env:
       GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}

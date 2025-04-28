@@ -8,7 +8,7 @@ on:
       - dev
 jobs:
   tests:
-    runs-on: [ "self-hosted", "Linux", "X64", "ci" ]
+    runs-on: [  "Linux", "X64", "ci" ]
     timeout-minutes: 30
     strategy:
       fail-fast: false

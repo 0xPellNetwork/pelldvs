@@ -10,7 +10,7 @@ on:
 jobs:
   build_and_publish:
     name: Build
-    runs-on: [  "Linux", "X64", "ci" ]
+    runs-on: ubuntu-latest
     environment: e2e-docker
     permissions:
       packages: write

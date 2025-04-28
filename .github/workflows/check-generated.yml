@@ -12,7 +12,7 @@ permissions:
   contents: read
 jobs:
   check-mocks-metrics:
-    runs-on: [  "Linux", "X64", "ci" ]
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/setup-go@v5
@@ -37,7 +37,7 @@ jobs:
             exit 1
           fi
   check-proto:
-    runs-on: [  "Linux", "X64", "ci" ]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/setup-go@v5
         with:

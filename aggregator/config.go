@@ -33,11 +33,13 @@ type ChainConfig struct {
 // It reads the file at the given path, deserializes the JSON content,
 // and returns the resulting configuration object.
 func LoadConfig(filePath string) (*AggregatorConfig, error) {
+	// Read the configuration file
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read config file: %v", err)
 	}
 
+	// Parse the JSON data into configuration structure
 	var config AggregatorConfig
 	if err := json.Unmarshal(data, &config); err != nil {
 		return nil, fmt.Errorf("failed to parse config file: %v", err)

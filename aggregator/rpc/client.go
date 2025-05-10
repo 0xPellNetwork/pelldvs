@@ -33,6 +33,7 @@ func (ra *RPCClientAggregator) CollectResponseSignature(response *aggTypes.Respo
 	if err != nil {
 		return fmt.Errorf("failed to call aggregator RPC method: %v", err)
 	}
+
 	validatedResponseCh <- result
 	return nil
 }

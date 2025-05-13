@@ -32,7 +32,7 @@ RUN curl -L https://foundry.paradigm.xyz | bash
 ENV PATH="$PATH:/root/.foundry/bin"
 RUN foundryup
 
-RUN go install github.com/mikefarah/yq/v4@latest
+RUN go install github.com/mikefarah/yq/v4@v4.45.2
 RUN go install github.com/go-delve/delve/cmd/dlv@latest
 COPY --from=build /app/pelldvs/build/pelle2e /usr/bin/pelle2e
 COPY ./test/e2e/docker/pelldvs/scripts /root/scripts

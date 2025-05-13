@@ -44,7 +44,7 @@ RUN curl -L https://foundry.paradigm.xyz | bash
 ENV PATH="$PATH:/root/.foundry/bin"
 RUN foundryup
 
-RUN go install github.com/mikefarah/yq/v4@latest
+RUN go install github.com/mikefarah/yq/v4@v4.45.2
 RUN go install github.com/go-delve/delve/cmd/dlv@latest
 COPY --from=build /app/pelldvs/build/pelldvs /usr/bin/pelldvs
 COPY --from=build /app/pell-emulator/build/pell-emulator /usr/bin/pell-emulator

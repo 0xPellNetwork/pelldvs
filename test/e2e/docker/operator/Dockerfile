@@ -9,7 +9,7 @@ RUN curl -L https://foundry.paradigm.xyz | bash
 ENV PATH="$PATH:/root/.foundry/bin"
 RUN foundryup
 
-RUN go install github.com/mikefarah/yq/v4@latest
+RUN go install github.com/mikefarah/yq/v4@v4.45.2
 COPY --from=build /app/pelldvs/build/pelldvs /usr/bin/pelldvs
 COPY ./docker/operator/scripts /root/scripts
 COPY ./docker/ssh /root/.ssh

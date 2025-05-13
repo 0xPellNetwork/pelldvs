@@ -41,6 +41,15 @@ jobs:
         run: make docker-test-pelle2e
         env:
           TIMEOUT_FOR_TASK_PROCESS: 60
+      - name: Print logs - emulator
+        run: make docker-emulator-logs-no-follow
+        if: always()
+      - name: Print logs - aggregator
+        run: make docker-aggregator-logs-no-follow
+        if: always()
+      - name: Print logs - operator
+        run: make docker-operator-logs-no-follow
+        if: always()
       - name: Stop services for cleanup
         working-directory: test/e2e
         run: make docker-down

@@ -1,7 +1,7 @@
 FROM pelldvs/e2e-pelldvs:latest AS build
 
 ########## Setup runtime env ##########
-FROM golang:1.23-bullseye AS runtime
+FROM golang:1.23-bookworm AS runtime
 RUN apt-get update -yqq && apt-get install -yqq openssh-server curl jq less
 RUN mkdir -p /run/sshd && chmod 0755 /run/sshd
 

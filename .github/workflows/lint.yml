@@ -29,9 +29,6 @@ jobs:
           cache: false
       - name: private
         run: git config --global url."https://${GITHUB_TOKEN}:x-oauth-basic@github.com/0xPellNetwork".insteadOf "https://github.com/0xPellNetwork"
-      - uses: golangci/golangci-lint-action@v8
-        with:
-          version: latest
-          args: --timeout 10m
-          github-token: ${{ secrets.GH_TOKEN }}
-        # if: "env.GIT_DIFF != ''"
+      - name: Run linter via Makefile
+        run: make lint
+

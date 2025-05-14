@@ -31,4 +31,3 @@ jobs:
         run: git config --global url."https://${GITHUB_TOKEN}:x-oauth-basic@github.com/0xPellNetwork".insteadOf "https://github.com/0xPellNetwork"
       - name: Run linter via Makefile
         run: make lint
-

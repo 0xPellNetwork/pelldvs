@@ -1,4 +1,4 @@
-FROM golang:1.23-bullseye AS build
+FROM golang:1.23-bookworm AS build
 
 RUN --mount=type=secret,id=github_token \
     if [ ! -s /run/secrets/github_token ]; then echo "github token is not set via secrets" >&2; exit 1; fi; \
@@ -36,7 +36,7 @@ RUN --mount=type=cache,target="/go/pkg/mod" \
     make build
 
 ########## Setup runtime env ##########
-FROM golang:1.23-bullseye AS runtime
+FROM golang:1.23-bookworm AS runtime
 RUN apt-get update -yqq && apt-get install -yqq openssh-server curl jq less
 RUN mkdir -p /run/sshd && chmod 0755 /run/sshd
 
@@ -44,7 +44,7 @@ RUN curl -L https://foundry.paradigm.xyz | bash
 ENV PATH="$PATH:/root/.foundry/bin"
 RUN foundryup
 
-RUN go install github.com/mikefarah/yq/v4@latest
+RUN go install github.com/mikefarah/yq/v4@v4.45.2
 RUN go install github.com/go-delve/delve/cmd/dlv@latest
 COPY --from=build /app/pelldvs/build/pelldvs /usr/bin/pelldvs
 COPY --from=build /app/pell-emulator/build/pell-emulator /usr/bin/pell-emulator

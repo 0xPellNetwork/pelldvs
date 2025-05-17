@@ -33,6 +33,9 @@ docker-emulator-down:
 docker-emulator-logs:
 	@docker compose logs -f emulator
 
+docker-emulator-logs-no-follow:
+	@docker compose logs emulator
+
 docker-emulator-bash:
 	@docker compose exec -it emulator bash
 
@@ -50,6 +53,9 @@ docker-aggregator-down:
 docker-aggregator-logs:
 	@docker compose logs -f aggregator
 
+docker-aggregator-logs-no-follow:
+	@docker compose logs aggregator
+
 docker-aggregator-bash:
 	@docker compose exec -it aggregator bash
 
@@ -66,6 +72,9 @@ docker-operator-down:
 
 docker-operator-logs:
 	@docker compose logs -f operator
+
+docker-operator-logs-no-follow:
+	@docker compose logs operator
 
 docker-operator-bash:
 	@docker compose exec -it operator bash

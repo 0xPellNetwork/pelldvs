@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v0.4.0
+
+### Bug Fixes
+
+- (indexer) [#28](https://github.com/0xPellNetwork/pelldvs/pull/28) bugfix: do not return error while can't get operator from store in the in the loop in OperatorInfoProvider.GetOperatorsDVSStateAtBlock and GetOperatorsStateAtBlock
+
 ## v0.3.0
 
 ### Features
@@ -11,9 +17,9 @@
 
 ### Improvements
 
-- (CI) [#7](https://github.com/0xPellNetwork/pelldvs/pull/7) ci: add changelog check in CI  
-- (CI) [#11](https://github.com/0xPellNetwork/pelldvs/pull/11) ci: retrieve E2E port config from GitHub variables  
-- (refactor) [#9](https://github.com/0xPellNetwork/pelldvs/pull/9) refactor: rename abci to avsi  
+- (CI) [#7](https://github.com/0xPellNetwork/pelldvs/pull/7) ci: add changelog check in CI
+- (CI) [#11](https://github.com/0xPellNetwork/pelldvs/pull/11) ci: retrieve E2E port config from GitHub variables
+- (refactor) [#9](https://github.com/0xPellNetwork/pelldvs/pull/9) refactor: rename abci to avsi
 - (refactor) [#8](https://github.com/0xPellNetwork/pelldvs/pull/8) refactor: update private validator interface
 - (fix) [#12](https://github.com/0xPellNetwork/pelldvs/pull/12) fix: task failure when aggregator result does not meet threshold
 - (refactor) [#15](https://github.com/0xPellNetwork/pelldvs/pull/15) refactor: make aggregator reactor asynchronously handle requests
@@ -27,7 +33,7 @@
 
 ## v0.2.2
 
-v0.2.2 includes a version release CI script fix.  
+v0.2.2 includes a version release CI script fix.
 
 ## v0.2.0
 

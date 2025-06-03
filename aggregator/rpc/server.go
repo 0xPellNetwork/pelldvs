@@ -115,6 +115,12 @@ func (ra *RPCServerAggregator) IsRunning() bool {
 	return ra.BaseService.IsRunning()
 }
 
+// HealthCheck provides a simple health check for the RPC server
+func (ra *RPCServerAggregator) HealthCheck(_ struct{}, reply *bool) error {
+	*reply = ra.IsRunning()
+	return nil
+}
+
 // OnStop gracefully shuts down the RPC server
 // closing the network listener
 func (ra *RPCServerAggregator) OnStop() {

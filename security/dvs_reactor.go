@@ -42,7 +42,6 @@ func CreateDVSReactor(
 	logger log.Logger,
 	eventManager *EventManager,
 ) (DVSReactor, error) {
-
 	dvsReader, err := reader.NewDVSReader(config.InteractorConfigPath, db, logger)
 	if err != nil {
 		return DVSReactor{}, fmt.Errorf("failed to create dvsReader: %v", err)
@@ -77,6 +76,34 @@ func (dvs *DVSReactor) SaveDVSRequestResult(res *avsitypes.DVSRequestResult, fir
 
 // HandleDVSRequest handles the DVS request
 func (dvs *DVSReactor) HandleDVSRequest(request avsitypes.DVSRequest) error {
+	// handle panic
+	defer func() {
+		if r := recover(); r != nil {
+			dvs.logger.Error("dvsReactor.HandleDVSRequest panic",
+				"error", fmt.Sprintf("%v", r),
+				"request", request,
+			)
+			var err error
+			// construct an error message
+			switch t := r.(type) {
+			case error:
+				err = fmt.Errorf("panic on dvsReactor.HandleDVSRequest: %w", t)
+			default:
+				err = fmt.Errorf("panic on dvsReactor.HandleDVSRequest: %v", r)
+			}
+
+			// save the request with an error
+			result := avsitypes.DVSRequestResult{
+				DvsRequest: &request,
+				DvsResponse: &avsitypes.DVSResponse{
+					Error: err.Error(),
+				},
+			}
+			if err := dvs.SaveDVSRequestResult(&result, false); err != nil {
+				dvs.logger.Error("dvsReactor SaveDVSRequestResult", "err", err.Error())
+			}
+		}
+	}()
 	dvs.logger.Info("dvsReactor.HandleDVSRequest", "request", request)
 
 	// First save the request

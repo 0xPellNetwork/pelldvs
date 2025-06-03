@@ -35,7 +35,7 @@ require github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7 // indi
 require (
 	github.com/0xPellNetwork/pell-middleware-contracts v0.2.32
 	github.com/0xPellNetwork/pelldvs-interactor v0.0.15
-	github.com/0xPellNetwork/pelldvs-libs v0.2.0
+	github.com/0xPellNetwork/pelldvs-libs v0.2.1-0.20250603091455-9f02da5a16f7
 	github.com/AlecAivazis/survey/v2 v2.3.7
 	github.com/cometbft/cometbft-db v0.14.1
 	github.com/consensys/gnark-crypto v0.16.0

@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/huandu/go-assert"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/0xPellNetwork/pelldvs-libs/log"
 )
@@ -29,12 +29,12 @@ func (trs *TestRPCServer) setUnHealthy() {
 	trs.isHealthy = false
 }
 
-func (ra *TestRPCServer) HealthCheck(_ struct{}, reply *bool) error {
-	*reply = ra.isHealthy
+func (trs *TestRPCServer) HealthCheck(_ struct{}, reply *bool) error {
+	*reply = trs.isHealthy
 	return nil
 }
 
-func (ra *TestRPCServer) Now(_ struct{}, reply *int) error {
+func (trs *TestRPCServer) Now(_ struct{}, reply *int) error {
 	*reply = time.Now().Nanosecond()
 	return nil
 }
@@ -86,19 +86,19 @@ func TestGetClient(t *testing.T) {
 	var now int
 	err = client.Call("TestRPCServer.Now", struct{}{}, &now)
 	t.Log("now1", now)
-	assert.AssertEqual(t, err, nil)
-	assert.Assert(t, now > 0)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, true, now > 0)
 
 	// Test health check
 	var isHealthy bool
 	err = client.Call("TestRPCServer.HealthCheck", struct{}{}, &isHealthy)
-	assert.AssertEqual(t, err, nil)
-	assert.AssertEqual(t, isHealthy, true)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, isHealthy, true)
 
 	server.setUnHealthy()
 	err = client.Call("TestRPCServer.HealthCheck", struct{}{}, &isHealthy)
-	assert.AssertEqual(t, err, nil)
-	assert.AssertEqual(t, isHealthy, false)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, isHealthy, false)
 
 	// test reconnection
 	// recreate testserver
@@ -111,8 +111,7 @@ func TestGetClient(t *testing.T) {
 	// this should fail because the server is restart
 	err = client.Call("TestRPCServer.Now", struct{}{}, &now)
 	t.Log("err===", err)
-	assert.AssertNotEqual(t, err, nil)
-	assert.AssertEqual(t, err, rpc.ErrShutdown)
+	assert.Equal(t, err, rpc.ErrShutdown)
 
 	time.Sleep(2 * time.Second) // wait for manager to reconnect
 
@@ -130,8 +129,9 @@ func TestGetClient(t *testing.T) {
 			}
 		}
 	}
+	err = client.Call("TestRPCServer.Now", struct{}{}, &now)
 	t.Log("err======", err)
 	t.Log("now2", now)
-	assert.AssertEqual(t, err, nil)
-	assert.Assert(t, now > 0)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, true, now > 0)
 }

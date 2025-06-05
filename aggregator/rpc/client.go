@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/rpc"
 
-	"github.com/0xPellNetwork/pelldvs-libs/clientmanager/rpcclientmanager"
+	"github.com/0xPellNetwork/pelldvs-interactor/libs/clientmanager/rpcclientmanager"
 	"github.com/0xPellNetwork/pelldvs-libs/log"
 	aggTypes "github.com/0xPellNetwork/pelldvs/aggregator"
 )

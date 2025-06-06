@@ -29,6 +29,7 @@ func NewRPCClientAggregator(address string, logger log.Logger) (*RPCClientAggreg
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to aggregator: %v", err)
 	}
+
 	return &RPCClientAggregator{
 		clientManager: manager,
 		logger:        logger,
@@ -69,9 +70,10 @@ func (ra *RPCClientAggregator) HealthCheck() (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("failed to get RPC client: %v", err)
 	}
-	err = client.Call(RPCHealthCheckMethod, struct{}{}, &result)
-	if err != nil {
+
+	if err = client.Call(RPCHealthCheckMethod, struct{}{}, &result); err != nil {
 		return false, fmt.Errorf("failed to call aggregator RPC method: %v", err)
 	}
+
 	return result, nil
 }

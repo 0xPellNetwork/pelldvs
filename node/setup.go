@@ -37,7 +37,7 @@ func DefaultNewNode(config *cfg.Config, logger log.Logger) (*Node, error) {
 		return nil, fmt.Errorf("failed to load or gen node key %s: %w", config.NodeKeyFile(), err)
 	}
 
-	aggregator, err := aggRPC.NewRPCClientAggregator(config.Pell.AggregatorRPCURL)
+	aggregator, err := aggRPC.NewRPCClientAggregator(config.Pell.AggregatorRPCURL, logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create RPCAggregator")
 	}

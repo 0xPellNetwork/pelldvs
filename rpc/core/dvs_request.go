@@ -21,7 +21,6 @@ func (env *Environment) RequestDVS(ctx *rpctypes.Context,
 	groupNumbers []uint32,
 	groupThresholdPercentages []uint32,
 ) (*ctypes.ResultRequest, error) {
-
 	request := avsiTypes.DVSRequest{
 		Data:                      data,
 		Height:                    height,
@@ -45,7 +44,6 @@ func (env *Environment) RequestDVSAsync(ctx *rpctypes.Context,
 	groupNumbers []uint32,
 	groupThresholdPercentages []uint32,
 ) (*ctypes.ResultRequestDvsAsync, error) {
-
 	request := avsiTypes.DVSRequest{
 		Data:                      data,
 		Height:                    height,
@@ -53,7 +51,6 @@ func (env *Environment) RequestDVSAsync(ctx *rpctypes.Context,
 		GroupNumbers:              groupNumbers,
 		GroupThresholdPercentages: groupThresholdPercentages,
 	}
-
 	go func() {
 		if err := env.DVSReactor.HandleDVSRequest(request); err != nil {
 			env.Logger.Error("RequestDvsAsync", "module", "rpc", "func", "HandleDVSRequest", "err", err)

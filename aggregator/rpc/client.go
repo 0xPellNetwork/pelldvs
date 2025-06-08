@@ -1,6 +1,7 @@
 package rpc
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/rpc"
@@ -25,7 +26,11 @@ type RPCClientAggregator struct {
 // NewRPCClientAggregator creates a new client instance connected to the specified address
 // establishing a connection to the aggregator RPC server
 func NewRPCClientAggregator(address string, logger log.Logger) (*RPCClientAggregator, error) {
-	manager, err := rpcclientmanager.NewRPCClientManager(address, RPCHealthCheckMethod, logger)
+	manager, err := rpcclientmanager.NewRPCClientManager(
+		address,
+		logger,
+		rpcclientmanager.WithHealthCheckMethod(RPCHealthCheckMethod),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to aggregator: %v", err)
 	}
@@ -40,7 +45,8 @@ func NewRPCClientAggregator(address string, logger log.Logger) (*RPCClientAggreg
 // to the RPC server and receiving the validated response
 func (ra *RPCClientAggregator) CollectResponseSignature(response *aggTypes.ResponseWithSignature, validatedResponseCh chan<- aggTypes.ValidatedResponse) error {
 	var result aggTypes.ValidatedResponse
-	client, err := ra.clientManager.GetClient()
+	ctx := context.Background()
+	client, err := ra.clientManager.GetClient(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get RPC client: %v", err)
 	}
@@ -49,7 +55,7 @@ func (ra *RPCClientAggregator) CollectResponseSignature(response *aggTypes.Respo
 	if errors.Is(err, rpc.ErrShutdown) {
 		// If the client is shutdown, try to reconnect
 		ra.logger.Info("RPC client is shutdown, attempting to reconnect")
-		client, err = ra.clientManager.GetClient()
+		client, err = ra.clientManager.GetClient(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to get RPC client after shutdown: %v", err)
 		}
@@ -66,7 +72,7 @@ func (ra *RPCClientAggregator) CollectResponseSignature(response *aggTypes.Respo
 // HealthCheck performs a health check on the aggregator service
 func (ra *RPCClientAggregator) HealthCheck() (bool, error) {
 	var result bool
-	client, err := ra.clientManager.GetClient()
+	client, err := ra.clientManager.GetClient(context.Background())
 	if err != nil {
 		return false, fmt.Errorf("failed to get RPC client: %v", err)
 	}

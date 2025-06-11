@@ -85,7 +85,7 @@ func NewRPCServerAggregator(
 		common.HexToAddress(interactorConfig.ContractConfig.PellDelegationManager),
 		common.HexToAddress(interactorConfig.ContractConfig.PellRegistryRouter),
 	)
-	pellindexer, err := indexer.NewInitedPellIndexer(ctx, registry, 1337, pellIndexerConfig, db, logger)
+	pellindexer, err := indexer.NewInitedPellIndexer(ctx, registry, interactorConfig.ChainID, pellIndexerConfig, db, logger)
 	if err != nil {
 		logger.Error("Failed to create Pell indexer", "error", err)
 		return nil, fmt.Errorf("failed to create Pell indexer: %v", err)

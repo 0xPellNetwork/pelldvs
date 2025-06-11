@@ -89,6 +89,7 @@ func NewTendermint(app avsi.Application, opts *Options) *nm.Node {
 	node, err := nm.NewNode(config, pv, nodeKey, papp,
 		cfg.DefaultDBProvider,
 		nil,
+		nil,
 		nm.DefaultMetricsProvider(config.Instrumentation),
 		logger)
 	if err != nil {

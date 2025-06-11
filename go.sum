@@ -9,6 +9,12 @@ github.com/0xPellNetwork/pelldvs-interactor v0.0.16-0.20250608191632-0978b5efeff
 github.com/0xPellNetwork/pelldvs-interactor v0.0.16-0.20250608191632-0978b5efeff9/go.mod h1:kHbDu0iVhdwF38ZVDB2Fnsg87+gj74wAnaKz+wPwb/w=
 github.com/0xPellNetwork/pelldvs-interactor v0.0.16-0.20250609025547-6a3bd717680d h1:FM0Y013SB7cebjOSFg+v/k4TpLzXQd9ZhnX2wj497hs=
 github.com/0xPellNetwork/pelldvs-interactor v0.0.16-0.20250609025547-6a3bd717680d/go.mod h1:kHbDu0iVhdwF38ZVDB2Fnsg87+gj74wAnaKz+wPwb/w=
+github.com/0xPellNetwork/pelldvs-interactor v0.0.16-0.20250611101136-a4b907e13f20 h1:Yp2es3LjDGG53PIYOOZmGBwvNjxD/3EiMMfmRJNf9vc=
+github.com/0xPellNetwork/pelldvs-interactor v0.0.16-0.20250611101136-a4b907e13f20/go.mod h1:kHbDu0iVhdwF38ZVDB2Fnsg87+gj74wAnaKz+wPwb/w=
+github.com/0xPellNetwork/pelldvs-interactor v0.0.16-0.20250611101426-1675e402dee4 h1:50FMUVE4rud0O+jiU5LU+f/D6s4oyAAKaBZhK6cEpBo=
+github.com/0xPellNetwork/pelldvs-interactor v0.0.16-0.20250611101426-1675e402dee4/go.mod h1:kHbDu0iVhdwF38ZVDB2Fnsg87+gj74wAnaKz+wPwb/w=
+github.com/0xPellNetwork/pelldvs-interactor v0.0.16-0.20250611102512-39f08a5c49c9 h1:kdeKnT2j6CuodHhCQklghvTYCasnz9RiQA9wS46m6Vw=
+github.com/0xPellNetwork/pelldvs-interactor v0.0.16-0.20250611102512-39f08a5c49c9/go.mod h1:kHbDu0iVhdwF38ZVDB2Fnsg87+gj74wAnaKz+wPwb/w=
 github.com/0xPellNetwork/pelldvs-libs v0.2.0 h1:fNyzJKhH5Iux1YVPddLVwR/txPkbkRvE5+VunS7tFeg=
 github.com/0xPellNetwork/pelldvs-libs v0.2.0/go.mod h1:mU9ltThnyjDpKZHnOuJvMqbQU1O99P4cOAecTUKDAIY=
 github.com/AlecAivazis/survey/v2 v2.3.7 h1:6I/u8FvytdGsgonrYsVn2t8t4QiRnh6QSTqkkhIiSjQ=

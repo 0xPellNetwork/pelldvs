@@ -12,6 +12,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/cors"
 
+	"github.com/0xPellNetwork/pelldvs-interactor/interactor/reader"
 	"github.com/0xPellNetwork/pelldvs-libs/log"
 	"github.com/0xPellNetwork/pelldvs/aggregator"
 	cfg "github.com/0xPellNetwork/pelldvs/config"
@@ -113,12 +114,13 @@ func NewNode(config *cfg.Config,
 	clientCreator proxy.ClientCreator,
 	dbProvider cfg.DBProvider,
 	aggregator aggregator.Aggregator,
+	dvsReader reader.DVSReader,
 	metricsProvider MetricsProvider,
 	logger log.Logger,
 	options ...Option,
 ) (*Node, error) {
 	return NewNodeWithContext(context.TODO(), config, privValidator,
-		nodeKey, clientCreator, dbProvider, aggregator,
+		nodeKey, clientCreator, dbProvider, aggregator, dvsReader,
 		metricsProvider, logger, options...)
 }
 
@@ -128,13 +130,13 @@ func NewNodeWithContext(ctx context.Context,
 	privValidator types.PrivValidator,
 	nodeKey *p2p.NodeKey,
 	clientCreator proxy.ClientCreator,
-	dbProvider cfg.DBProvider,
+	requestIndexDBProvider cfg.DBProvider,
 	aggregator aggregator.Aggregator,
+	dvsReader reader.DVSReader,
 	metricsProvider MetricsProvider,
 	logger log.Logger,
 	options ...Option,
 ) (*Node, error) {
-
 	// TODO: add service id from config
 	p2pMetrics, avsiMetrics := metricsProvider("id")
 
@@ -168,7 +170,7 @@ func NewNodeWithContext(ctx context.Context,
 	// If an address is provided, listen on the socket for a connection from an
 	// external signing process.
 
-	dvsRequestIndexer, err := createDvsRequestIndexer(config, dbProvider, logger)
+	dvsRequestIndexer, err := createDvsRequestIndexer(config, requestIndexDBProvider, logger)
 
 	if err != nil {
 		return nil, err
@@ -202,13 +204,6 @@ func NewNodeWithContext(ctx context.Context,
 		return nil, fmt.Errorf("could not create addrbook: %w", err)
 	}
 
-	db, err := cfg.DefaultDBProvider(&cfg.DBContext{
-		ID:     "indexer",
-		Config: config,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to init db: %v", err)
-	}
 	// Optionally, start the pex reactor
 	//
 	// TODO:
@@ -245,7 +240,7 @@ func NewNodeWithContext(ctx context.Context,
 	eventManager := security.NewEventManager(logger)
 
 	// Create the DVS and Aggregator reactors
-	dvsReactor, err := security.CreateDVSReactor(*config.Pell, proxyApp, dvsRequestIndexer, db, dvsState, logger, eventManager)
+	dvsReactor, err := security.CreateDVSReactor(*config.Pell, proxyApp, dvsRequestIndexer, dvsReader, dvsState, logger, eventManager)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create dvsReactor: %w", err)
 	}

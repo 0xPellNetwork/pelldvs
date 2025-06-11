@@ -116,6 +116,7 @@ func startNode(cfg *Config) error {
 		clientCreator,
 		config.DefaultDBProvider,
 		nil,
+		nil,
 		node.DefaultMetricsProvider(cmtcfg.Instrumentation),
 		nodeLogger,
 	)

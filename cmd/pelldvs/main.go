@@ -10,7 +10,6 @@ import (
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/commands/service"
 	"github.com/0xPellNetwork/pelldvs/cmd/pelldvs/utils"
 	"github.com/0xPellNetwork/pelldvs/libs/cli"
-	nm "github.com/0xPellNetwork/pelldvs/node"
 )
 
 func main() {
@@ -40,10 +39,10 @@ func main() {
 	//	* Provide their own DB implementation
 	// can copy this file and use something other than the
 	// DefaultNewNode function
-	nodeFunc := nm.DefaultNewNode
-
-	//Create & start node
-	rootCmd.AddCommand(cmd.NewRunNodeCmd(nodeFunc))
+	//nodeFunc := nm.DefaultNewNode
+	//
+	////Create & start node
+	//rootCmd.AddCommand(cmd.NewRunNodeCmd(nodeFunc))
 
 	cmd := cli.PrepareBaseCmd(rootCmd, "PELLDVS", os.ExpandEnv(filepath.Join("$HOME", ".pelldvs")))
 	if err := cmd.Execute(); err != nil {

@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"math/big"
 
-	dbm "github.com/cometbft/cometbft-db"
-
 	"github.com/0xPellNetwork/pelldvs-interactor/interactor/reader"
 	evmtypes "github.com/0xPellNetwork/pelldvs-interactor/types"
 	"github.com/0xPellNetwork/pelldvs-libs/log"
@@ -37,16 +35,11 @@ func CreateDVSReactor(
 	config config.PellConfig,
 	proxyApp proxy.AppConns,
 	dvsRequestIndexer requestindex.DvsRequestIndexer,
-	db dbm.DB,
+	dvsReader reader.DVSReader,
 	dvsState *DVSState,
 	logger log.Logger,
 	eventManager *EventManager,
 ) (DVSReactor, error) {
-	dvsReader, err := reader.NewDVSReader(config.InteractorConfigPath, db, logger)
-	if err != nil {
-		return DVSReactor{}, fmt.Errorf("failed to create dvsReader: %v", err)
-	}
-
 	dvs := DVSReactor{
 		config:            config,
 		ProxyApp:          proxyApp,

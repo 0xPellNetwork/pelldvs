@@ -47,12 +47,14 @@ func DefaultNewNode(config *cfg.Config, logger log.Logger) (*Node, error) {
 		return nil, err
 	}
 
+	// TODO(jimmy @2025-06-11, 18:31): check this logic
 	return NewNode(config,
 		pv,
 		nodeKey,
 		proxy.DefaultClientCreator(config.ProxyApp, config.AVSI, config.DBDir()),
 		cfg.DefaultDBProvider,
 		aggregator,
+		nil,
 		DefaultMetricsProvider(config.Instrumentation),
 		logger,
 	)

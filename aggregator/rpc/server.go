@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	dbm "github.com/cometbft/cometbft-db"
+	dbm "github.com/cosmos/cosmos-db"
 	"github.com/ethereum/go-ethereum/common"
 
 	interactorcfg "github.com/0xPellNetwork/pelldvs-interactor/config"

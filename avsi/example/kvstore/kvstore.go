@@ -5,7 +5,7 @@ import (
 	"context"
 	"fmt"
 
-	dbm "github.com/cometbft/cometbft-db"
+	dbm "github.com/cosmos/cosmos-db"
 
 	"github.com/0xPellNetwork/pelldvs-libs/log"
 	"github.com/0xPellNetwork/pelldvs/avsi/types"
@@ -45,7 +45,7 @@ func NewApplication(db dbm.DB) *Application {
 // NewPersistentApplication creates a new application using the goleveldb database engine
 func NewPersistentApplication(dbDir string) *Application {
 	name := "kvstore"
-	db, err := dbm.NewGoLevelDB(name, dbDir)
+	db, err := dbm.NewGoLevelDB(name, dbDir, nil)
 	if err != nil {
 		panic(fmt.Errorf("failed to create persistent app at %s: %w", dbDir, err))
 	}

@@ -10,6 +10,7 @@ import (
 
 	_ "github.com/lib/pq" // provide the psql db driver
 
+	interactorcfg "github.com/0xPellNetwork/pelldvs-interactor/config"
 	"github.com/0xPellNetwork/pelldvs-libs/log"
 	aggRPC "github.com/0xPellNetwork/pelldvs/aggregator/rpc"
 	avsi "github.com/0xPellNetwork/pelldvs/avsi/types"
@@ -22,6 +23,7 @@ import (
 	"github.com/0xPellNetwork/pelldvs/state/requestindex/kv"
 	"github.com/0xPellNetwork/pelldvs/state/requestindex/null"
 	"github.com/0xPellNetwork/pelldvs/types"
+	"github.com/0xPellNetwork/pelldvs/utils"
 )
 
 const readHeaderTimeout = 10 * time.Second
@@ -47,14 +49,33 @@ func DefaultNewNode(config *cfg.Config, logger log.Logger) (*Node, error) {
 		return nil, err
 	}
 
-	// TODO(jimmy @2025-06-11, 18:31): check this logic
+	// setup dvs reader
+	interactorConfig, err := interactorcfg.LoadConfig(config.Pell.InteractorConfigPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create interactor config from file: %v", err)
+	}
+
+	db, err := cfg.DefaultDBProvider(&cfg.DBContext{
+		ID:     "indexer",
+		Config: config,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to init db: %v", err)
+	}
+
+	dvsReader, err := utils.CreateDVSReader(context.TODO(), interactorConfig, db, logger)
+	if err != nil {
+		logger.Error("Failed to create DVS reader", "error", err)
+		return nil, fmt.Errorf("failed to create DVS reader: %v", err)
+	}
+
 	return NewNode(config,
 		pv,
 		nodeKey,
 		proxy.DefaultClientCreator(config.ProxyApp, config.AVSI, config.DBDir()),
 		cfg.DefaultDBProvider,
 		aggregator,
-		nil,
+		dvsReader,
 		DefaultMetricsProvider(config.Instrumentation),
 		logger,
 	)
@@ -76,7 +97,8 @@ func DefaultMetricsProvider(config *cfg.InstrumentationConfig) MetricsProvider {
 	}
 }
 
-func createAndStartProxyAppConns(clientCreator proxy.ClientCreator, logger log.Logger, metrics *proxy.Metrics) (proxy.AppConns, error) {
+func createAndStartProxyAppConns(clientCreator proxy.ClientCreator,
+	logger log.Logger, metrics *proxy.Metrics) (proxy.AppConns, error) {
 	proxyApp := proxy.NewAppConns(clientCreator, metrics)
 	proxyApp.SetLogger(logger.With("module", "proxy"))
 	if err := proxyApp.Start(); err != nil {

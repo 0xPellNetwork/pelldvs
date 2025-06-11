@@ -4,6 +4,10 @@ github.com/0xPellNetwork/pell-middleware-contracts v0.2.32 h1:RW2JZB/ScdSqqVaixO
 github.com/0xPellNetwork/pell-middleware-contracts v0.2.32/go.mod h1:Qex0CyN926FuTONIfZfoMsbs+2UDCwMpkZg3QvRccvQ=
 github.com/0xPellNetwork/pelldvs-interactor v0.0.16-0.20250611110957-67b6ecb68a9a h1:sTYx5pMSxxGEmGjAOs7/mpvtICkEcf6ae+UFSAOvzxc=
 github.com/0xPellNetwork/pelldvs-interactor v0.0.16-0.20250611110957-67b6ecb68a9a/go.mod h1:9hMb0zm82asDwlWYsIBxwnK09p/t/WmfThqaMtAO1y8=
+github.com/0xPellNetwork/pelldvs-interactor v0.0.16-0.20250611164415-a7989b67426e h1:pkZpOKYjTBsN18rBcd4hX2OXf44SC1eyxzGwlpbJlFA=
+github.com/0xPellNetwork/pelldvs-interactor v0.0.16-0.20250611164415-a7989b67426e/go.mod h1:9hMb0zm82asDwlWYsIBxwnK09p/t/WmfThqaMtAO1y8=
+github.com/0xPellNetwork/pelldvs-interactor v0.0.16-0.20250611172719-1280e6d84b4c h1:oPWUDsGXuN58TgS52M28Wbj9P06PfbmEkfEjBs9NL5g=
+github.com/0xPellNetwork/pelldvs-interactor v0.0.16-0.20250611172719-1280e6d84b4c/go.mod h1:9hMb0zm82asDwlWYsIBxwnK09p/t/WmfThqaMtAO1y8=
 github.com/0xPellNetwork/pelldvs-libs v0.2.0 h1:fNyzJKhH5Iux1YVPddLVwR/txPkbkRvE5+VunS7tFeg=
 github.com/0xPellNetwork/pelldvs-libs v0.2.0/go.mod h1:mU9ltThnyjDpKZHnOuJvMqbQU1O99P4cOAecTUKDAIY=
 github.com/AlecAivazis/survey/v2 v2.3.7 h1:6I/u8FvytdGsgonrYsVn2t8t4QiRnh6QSTqkkhIiSjQ=

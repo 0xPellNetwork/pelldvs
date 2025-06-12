@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"math/big"
 
-	dbm "github.com/cometbft/cometbft-db"
-
 	"github.com/0xPellNetwork/pelldvs-interactor/interactor/reader"
 	evmtypes "github.com/0xPellNetwork/pelldvs-interactor/types"
 	"github.com/0xPellNetwork/pelldvs-libs/log"
@@ -37,17 +35,11 @@ func CreateDVSReactor(
 	config config.PellConfig,
 	proxyApp proxy.AppConns,
 	dvsRequestIndexer requestindex.DvsRequestIndexer,
-	db dbm.DB,
+	dvsReader reader.DVSReader,
 	dvsState *DVSState,
 	logger log.Logger,
 	eventManager *EventManager,
 ) (DVSReactor, error) {
-
-	dvsReader, err := reader.NewDVSReader(config.InteractorConfigPath, db, logger)
-	if err != nil {
-		return DVSReactor{}, fmt.Errorf("failed to create dvsReader: %v", err)
-	}
-
 	dvs := DVSReactor{
 		config:            config,
 		ProxyApp:          proxyApp,
@@ -77,6 +69,34 @@ func (dvs *DVSReactor) SaveDVSRequestResult(res *avsitypes.DVSRequestResult, fir
 
 // HandleDVSRequest handles the DVS request
 func (dvs *DVSReactor) HandleDVSRequest(request avsitypes.DVSRequest) error {
+	// handle panic
+	defer func() {
+		if r := recover(); r != nil {
+			dvs.logger.Error("dvsReactor.HandleDVSRequest panic",
+				"error", fmt.Sprintf("%v", r),
+				"request", request,
+			)
+			var err error
+			// construct an error message
+			switch t := r.(type) {
+			case error:
+				err = fmt.Errorf("panic on dvsReactor.HandleDVSRequest: %w", t)
+			default:
+				err = fmt.Errorf("panic on dvsReactor.HandleDVSRequest: %v", r)
+			}
+
+			// save the request with an error
+			result := avsitypes.DVSRequestResult{
+				DvsRequest: &request,
+				DvsResponse: &avsitypes.DVSResponse{
+					Error: err.Error(),
+				},
+			}
+			if err := dvs.SaveDVSRequestResult(&result, false); err != nil {
+				dvs.logger.Error("dvsReactor SaveDVSRequestResult", "err", err.Error())
+			}
+		}
+	}()
 	dvs.logger.Info("dvsReactor.HandleDVSRequest", "request", request)
 
 	// First save the request
@@ -92,11 +112,19 @@ func (dvs *DVSReactor) HandleDVSRequest(request avsitypes.DVSRequest) error {
 	for i, v := range request.GroupNumbers {
 		groupNumbers[i] = evmtypes.GroupNumber(v)
 	}
-	operatorsDvsState, err := dvs.dvsReader.GetOperatorsDVSStateAtBlock(uint64(request.ChainId), groupNumbers, uint32(request.Height))
+	operatorsDvsState, err := dvs.dvsReader.GetOperatorsDVSStateAtBlock(uint64(request.ChainId),
+		groupNumbers, uint32(request.Height))
 	if err != nil {
 		dvs.logger.Error("dvsInteractor dvsReader.GetOperatorsDVSStateAtBlock", "err", err.Error())
 		return err
 	}
+
+	if len(operatorsDvsState) == 0 {
+		dvs.logger.Error("operatorsDvsState is empty", "request", request)
+		return fmt.Errorf("operatorsDvsState is empty")
+	}
+
+	dvs.logger.Info("dvsReactor.HandleDVSRequest operatorsDvsState count", "count", len(operatorsDvsState))
 
 	operators := make([]*avsitypes.Operator, 0)
 	for _, operatorState := range operatorsDvsState {
@@ -104,6 +132,16 @@ func (dvs *DVSReactor) HandleDVSRequest(request avsitypes.DVSRequest) error {
 		for _, stakeAmount := range operatorState.StakePerGroup {
 			stake = stake.Add(stake, stakeAmount)
 		}
+
+		if operatorState.OperatorInfo.Pubkeys.G1Pubkey == nil || operatorState.OperatorInfo.Pubkeys.G2Pubkey == nil {
+			dvs.logger.Error("operatorState.OperatorInfo.Pubkeys.G1Pubkey "+
+				"or operatorState.OperatorInfo.Pubkeys.G2Pubkey is nil",
+				"operatorID", operatorState.OperatorID,
+				"operatorAddress", operatorState.OperatorAddress,
+			)
+			continue
+		}
+
 		pubkeys := &avsitypes.OperatorPubkeys{
 			G1Pubkey: operatorState.OperatorInfo.Pubkeys.G1Pubkey.Serialize(),
 			G2Pubkey: operatorState.OperatorInfo.Pubkeys.G2Pubkey.Serialize(),
@@ -118,6 +156,11 @@ func (dvs *DVSReactor) HandleDVSRequest(request avsitypes.DVSRequest) error {
 		})
 	}
 
+	if len(operators) == 0 {
+		dvs.logger.Error("operators is empty", "request", request)
+		return fmt.Errorf("operators is empty")
+	}
+
 	response, err := dvs.ProxyApp.Dvs().ProcessDVSRequest(context.Background(), &avsitypes.RequestProcessDVSRequest{
 		Request:  &request,
 		Operator: operators,
@@ -129,8 +172,10 @@ func (dvs *DVSReactor) HandleDVSRequest(request avsitypes.DVSRequest) error {
 
 	// Check if responseDigest length is equal to 32
 	if len(response.ResponseDigest) != responseDigestLenLimit {
-		dvs.logger.Error("responseDigest length is not equal to 32", "responseDigest", response.ResponseDigest)
-		return fmt.Errorf("responseDigest length %d is not equal to %d", response.ResponseDigest, responseDigestLenLimit)
+		dvs.logger.Error("responseDigest length is not equal to 32",
+			"responseDigest", response.ResponseDigest)
+		return fmt.Errorf("responseDigest length %d is not equal to %d",
+			response.ResponseDigest, responseDigestLenLimit)
 	}
 
 	// Second save the request
@@ -145,7 +190,8 @@ func (dvs *DVSReactor) HandleDVSRequest(request avsitypes.DVSRequest) error {
 }
 
 // OnRequestAfterAggregated is called after the request is aggregated
-func (dvs *DVSReactor) OnRequestAfterAggregated(requestHash avsitypes.DVSRequestHash, validatedResponse aggtypes.ValidatedResponse) error {
+func (dvs *DVSReactor) OnRequestAfterAggregated(requestHash avsitypes.DVSRequestHash,
+	validatedResponse aggtypes.ValidatedResponse) error {
 	dvs.logger.Info("dvsReactor.OnRequestAfterAggregated", "requestHash", requestHash)
 
 	// Query request result

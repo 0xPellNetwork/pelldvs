@@ -41,8 +41,8 @@ func main() {
 	// can copy this file and use something other than the
 	// DefaultNewNode function
 	nodeFunc := nm.DefaultNewNode
-
-	//Create & start node
+	//
+	////Create & start node
 	rootCmd.AddCommand(cmd.NewRunNodeCmd(nodeFunc))
 
 	cmd := cli.PrepareBaseCmd(rootCmd, "PELLDVS", os.ExpandEnv(filepath.Join("$HOME", ".pelldvs")))

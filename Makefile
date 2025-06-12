@@ -255,7 +255,7 @@ format:
 #? lint: Run latest golangci-lint linter
 lint:
 	@echo "--> Running linter"
-	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run
+	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@v1.60.3 run --timeout 8m0s
 .PHONY: lint
 
 # https://github.com/0xPellNetwork/pelldvs/pull/1925#issuecomment-1875127862

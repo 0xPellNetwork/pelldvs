@@ -12,10 +12,9 @@ import (
 	"sync"
 	"time"
 
-	dbm "github.com/cometbft/cometbft-db"
+	dbm "github.com/cosmos/cosmos-db"
 
 	interactorcfg "github.com/0xPellNetwork/pelldvs-interactor/config"
-	"github.com/0xPellNetwork/pelldvs-interactor/interactor/reader"
 	"github.com/0xPellNetwork/pelldvs-interactor/types"
 	"github.com/0xPellNetwork/pelldvs-libs/crypto/bls"
 	"github.com/0xPellNetwork/pelldvs-libs/log"
@@ -25,6 +24,7 @@ import (
 	"github.com/0xPellNetwork/pelldvs/libs/service"
 	"github.com/0xPellNetwork/pelldvs/rpc/core/errcode"
 	rpctypes "github.com/0xPellNetwork/pelldvs/rpc/jsonrpc/types"
+	"github.com/0xPellNetwork/pelldvs/utils"
 )
 
 // DBContext holds the necessary information for initializing a database
@@ -66,8 +66,9 @@ func NewRPCServerAggregator(
 		return nil, fmt.Errorf("failed to create interactor config from file: %v", err)
 	}
 
-	dvsReader, err := reader.NewDVSReaderFromConfig(interactorConfig, db, logger)
+	dvsReader, err := utils.CreateDVSReader(ctx, interactorConfig, db, logger)
 	if err != nil {
+		logger.Error("Failed to create DVS reader", "error", err)
 		return nil, fmt.Errorf("failed to create DVS reader: %v", err)
 	}
 
@@ -113,6 +114,12 @@ func (ra *RPCServerAggregator) OnStart() error {
 // implementing the service interface requirement
 func (ra *RPCServerAggregator) IsRunning() bool {
 	return ra.BaseService.IsRunning()
+}
+
+// HealthCheck provides a simple health check for the RPC server
+func (ra *RPCServerAggregator) HealthCheck(_ struct{}, reply *bool) error {
+	*reply = ra.IsRunning()
+	return nil
 }
 
 // OnStop gracefully shuts down the RPC server

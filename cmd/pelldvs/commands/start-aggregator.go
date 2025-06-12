@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"context"
 	"fmt"
 	"strings"
 
@@ -66,7 +65,7 @@ func runAggregatorService(cmd *cobra.Command) error {
 		aggregatorConfig.OperatorResponseTimeout = timeout
 	}
 
-	rpcAggregator, err := rpc.NewRPCServerAggregator(context.Background(), config, aggregatorConfig, logger)
+	rpcAggregator, err := rpc.NewRPCServerAggregator(cmd.Context(), config, aggregatorConfig, logger)
 	if err != nil {
 		return fmt.Errorf("failed to create RPCAggregator: %v", err)
 	}

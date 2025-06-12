@@ -10,6 +10,8 @@ github.com/0xPellNetwork/pelldvs-interactor v0.0.16-0.20250611172719-1280e6d84b4
 github.com/0xPellNetwork/pelldvs-interactor v0.0.16-0.20250611172719-1280e6d84b4c/go.mod h1:9hMb0zm82asDwlWYsIBxwnK09p/t/WmfThqaMtAO1y8=
 github.com/0xPellNetwork/pelldvs-libs v0.2.0 h1:fNyzJKhH5Iux1YVPddLVwR/txPkbkRvE5+VunS7tFeg=
 github.com/0xPellNetwork/pelldvs-libs v0.2.0/go.mod h1:mU9ltThnyjDpKZHnOuJvMqbQU1O99P4cOAecTUKDAIY=
+github.com/0xPellNetwork/pelldvs-libs v0.2.1 h1:PJaJ46t37A5O1mcrMN2+gqmmV1tVDKc9iGsU4EPCkf0=
+github.com/0xPellNetwork/pelldvs-libs v0.2.1/go.mod h1:mU9ltThnyjDpKZHnOuJvMqbQU1O99P4cOAecTUKDAIY=
 github.com/AlecAivazis/survey/v2 v2.3.7 h1:6I/u8FvytdGsgonrYsVn2t8t4QiRnh6QSTqkkhIiSjQ=
 github.com/AlecAivazis/survey/v2 v2.3.7/go.mod h1:xUTIdE4KCOIjsBAE1JYsUPoCqYdZ1reCfTwbto0Fduo=
 github.com/BurntSushi/toml v1.4.0 h1:kuoIxZQy2WRRk1pttg9asf+WVv6tWQuBNVmK8+nqPr0=

@@ -54,6 +54,12 @@ func CreateDVSReactor(
 
 // SaveDVSRequestResult saves the DVS request result
 func (dvs *DVSReactor) SaveDVSRequestResult(res *avsitypes.DVSRequestResult, first bool) error {
+	dvs.logger.Debug("SaveDVSRequestResult Saving dvs request result",
+		"first", first,
+		"hash", res.DvsRequest.Hash(),
+		"res.DvsRequest.", res.DvsRequest,
+		"res.DvsResponse", res.DvsResponse,
+	)
 	if first {
 		hash := res.DvsRequest.Hash()
 		old, err := dvs.dvsRequestIndexer.Get(hash)
@@ -64,7 +70,32 @@ func (dvs *DVSReactor) SaveDVSRequestResult(res *avsitypes.DVSRequestResult, fir
 			return fmt.Errorf("DVS request hash %X already exist", hash)
 		}
 	}
-	return dvs.dvsRequestIndexer.Index(res)
+	if err := dvs.dvsRequestIndexer.Index(res); err != nil {
+		dvs.logger.Debug("SaveDVSRequestResult Saving dvs request result",
+			"first", first,
+			"hash", res.DvsRequest.Hash(),
+			"res.DvsRequest.", res.DvsRequest,
+			"res.DvsResponse", res.DvsResponse,
+			"err", err.Error(),
+		)
+		return err
+	} else {
+		old, err := dvs.dvsRequestIndexer.Get(res.DvsRequest.Hash())
+		if err != nil {
+			dvs.logger.Error("SaveDVSRequestResult Get request from indexer failed",
+				"hash", res.DvsRequest.Hash(),
+				"err", err.Error(),
+			)
+			return err
+		}
+		dvs.logger.Debug("SaveDVSRequestResult Saving dvs request result",
+			"first", first,
+			"hash", res.DvsRequest.Hash(),
+			"old.DvsRequest.", old.DvsRequest,
+			"old.DvsResponse", old.DvsResponse,
+		)
+	}
+	return nil
 }
 
 // HandleDVSRequest handles the DVS request
@@ -192,7 +223,10 @@ func (dvs *DVSReactor) HandleDVSRequest(request avsitypes.DVSRequest) error {
 // OnRequestAfterAggregated is called after the request is aggregated
 func (dvs *DVSReactor) OnRequestAfterAggregated(requestHash avsitypes.DVSRequestHash,
 	validatedResponse aggtypes.ValidatedResponse) error {
-	dvs.logger.Info("dvsReactor.OnRequestAfterAggregated", "requestHash", requestHash)
+	dvs.logger.Info("dvsReactor.OnRequestAfterAggregated",
+		"requestHash", requestHash,
+		"validatedResponse", validatedResponse,
+	)
 
 	// Query request result
 	result, err := dvs.dvsRequestIndexer.Get(requestHash)
@@ -255,10 +289,13 @@ func (dvs *DVSReactor) OnRequestAfterAggregated(requestHash avsitypes.DVSRequest
 
 	// Third save the request, if the validatedResponse has no error
 	result.DvsResponse = &dvsResponse
+	dvs.logger.Info("dvsReactor.OnRequestAfterAggregated got res.DvsResponse to save",
+		"res.DvsResponse", result.DvsResponse)
 	if err := dvs.SaveDVSRequestResult(result, false); err != nil {
 		dvs.logger.Error("dvsReactor.dvsindex.Index dvsResponseIdx", "err", err.Error())
 		return err
 	}
+	dvs.logger.Info("dvsReactor.OnRequestAfterAggregated res.DvsResponse saved")
 
 	// If no error, send validated response to proxy application
 	postResponse := &avsitypes.RequestProcessDVSResponse{
@@ -267,6 +304,7 @@ func (dvs *DVSReactor) OnRequestAfterAggregated(requestHash avsitypes.DVSRequest
 	}
 	responseProcessDVSResponse, err := dvs.ProxyApp.Dvs().ProcessDVSResponse(context.Background(), postResponse)
 	if err != nil {
+		dvs.logger.Error("dvsReactor.pellProxyApp.ProcessDVSResponse", "err", err.Error())
 		return err
 	}
 

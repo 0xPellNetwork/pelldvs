@@ -53,7 +53,7 @@ services:
     environment:
       - DEBUG_ENABLED=${DEBUG_ENABLED:-false}
     ports:
-      - "${AGGREGATOR_HOST_PORT:-26653}:26653"
+      - "${AGGREGATOR_HOST_PORT:-23754}:26653"
       - "4345:${DEBUG_PORT:-2345}"
     entrypoint: [ "bash", "/root/scripts/start_dvs.sh" ]
     volumes:

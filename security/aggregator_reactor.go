@@ -94,13 +94,22 @@ func (ar *AggregatorReactor) HandleSignatureCollectionRequest(requestHash avsity
 		return fmt.Errorf("failed to send response signature to aggregator: %v", err)
 	}
 
+	ar.logger.Info("HandleSignatureCollectionRequest, CollectResponseSignature done")
+
 	// Create an aggregator response with the validated result
 	aggregatedResponse := AggregatorResponse{
 		requestHash:      requestHash,
 		validateResponse: <-validatedResponseCh,
 	}
 
+	ar.logger.Info("HandleSignatureCollectionRequest",
+		"aggregatedResponse.requestHash", aggregatedResponse.requestHash,
+		"aggregatedResponse.validateResponse", aggregatedResponse.validateResponse,
+	)
+
 	// Publish the completion event with the aggregated response
 	ar.eventManager.eventBus.Pub(types.CollectResponseSignatureDone, aggregatedResponse)
+
+	ar.logger.Info("HandleSignatureCollectionRequest done, event sent")
 	return nil
 }

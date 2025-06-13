@@ -6,6 +6,7 @@
 
 - (indexer) [#28](https://github.com/0xPellNetwork/pelldvs/pull/28) bugfix: do not return error while can't get operator from store in the in the loop in OperatorInfoProvider.GetOperatorsDVSStateAtBlock and GetOperatorsStateAtBlock
 - (aggregator) [#29](https://github.com/0xPellNetwork/pelldvs/pull/29) refactor: improve aggregator client to handle client shutdown.
+- (refactor) [#34](https://github.com/0xPellNetwork/pelldvs/pull/34) refactor: upgrade pelldvs-interactor version and improve e2e
 
 ## v0.3.0
 

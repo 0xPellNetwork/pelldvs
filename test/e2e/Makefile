@@ -36,7 +36,7 @@ docker-emulator-logs:
 docker-emulator-logs-no-follow:
 	@docker compose logs emulator
 
-docker-emulator-bash:
+docker-emulator-shell:
 	@docker compose exec -it emulator bash
 
 docker-emulator-rerun:
@@ -56,7 +56,7 @@ docker-aggregator-logs:
 docker-aggregator-logs-no-follow:
 	@docker compose logs aggregator
 
-docker-aggregator-bash:
+docker-aggregator-shell:
 	@docker compose exec -it aggregator bash
 
 docker-aggregator-rerun:
@@ -76,7 +76,7 @@ docker-operator-logs:
 docker-operator-logs-no-follow:
 	@docker compose logs operator
 
-docker-operator-bash:
+docker-operator-shell:
 	@docker compose exec -it operator bash
 
 docker-operator-rerun:
@@ -132,10 +132,10 @@ docker-contracts-logs-eth:
 docker-contracts-logs-hardhat:
 	docker compose logs -f hardhat
 
-docker-contracts-bash-eth:
+docker-contracts-shell-eth:
 	docker compose exec eth sh
 
-docker-contracts-bash-hardhat:
+docker-contracts-shell-hardhat:
 	docker compose exec hardhat bash
 
 docker-build-all: check-env-gh-token

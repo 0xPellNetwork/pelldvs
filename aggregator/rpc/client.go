@@ -50,6 +50,7 @@ func (ra *RPCClientAggregator) CollectResponseSignature(response *aggTypes.Respo
 	if err != nil {
 		return fmt.Errorf("failed to get RPC client: %v", err)
 	}
+	ra.logger.Info("AggregatorClient: Calling RPC method to collect response signature", "response", response)
 	err = client.Call(RPCServerAggregatorMethod, response, &result)
 
 	if errors.Is(err, rpc.ErrShutdown) {
@@ -65,7 +66,14 @@ func (ra *RPCClientAggregator) CollectResponseSignature(response *aggTypes.Respo
 	if err != nil {
 		return fmt.Errorf("failed to call aggregator RPC method: %v", err)
 	}
+
+	if result.Err != nil {
+		return fmt.Errorf("aggregator returned error: %v", result.Err)
+	}
+
+	ra.logger.Info("AggregatorClient: Received validated response", "result", result)
 	validatedResponseCh <- result
+	ra.logger.Info("AggregatorClient: Sent validated response to channel")
 	return nil
 }
 

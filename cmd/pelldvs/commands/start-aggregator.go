@@ -34,8 +34,8 @@ func init() {
 }
 
 func init() {
-	StartAggregatorCmd.Flags().String(flagRPCAddress, "0.0.0.0:26653", "RPC server listen address")
-	StartAggregatorCmd.Flags().String(flagTimeout, "5s", "Aggregation operation timeout")
+	StartAggregatorCmd.Flags().String(flagRPCAddress, "", "RPC server listen address")
+	StartAggregatorCmd.Flags().String(flagTimeout, "", "Aggregation operation timeout")
 }
 
 // startAggregator implements the logic to start the aggregator
@@ -56,7 +56,7 @@ func runAggregatorService(cmd *cobra.Command) error {
 		aggregatorConfigFile = strings.TrimRight(homeDir, "/") + "/config/aggregator.json"
 	}
 
-	aggregatorConfig, err := aggcfg.LoadConfig(aggregatorConfigFile)
+	aggregatorConfig, err := aggcfg.LoadConfig(aggregatorConfigFile, logger)
 	if err != nil {
 		return fmt.Errorf("failed to load aggregator configuration: %v", err)
 	}

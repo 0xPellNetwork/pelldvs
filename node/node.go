@@ -253,15 +253,14 @@ func NewNodeWithContext(ctx context.Context,
 	eventManager.StartListening()
 
 	node := &Node{
-		config:     config,
-		transport:  transport,
-		sw:         sw,
-		addrBook:   addrBook,
-		nodeInfo:   nodeInfo,
-		nodeKey:    nodeKey,
-		proxyApp:   proxyApp,
-		pexReactor: pexReactor,
-
+		config:            config,
+		transport:         transport,
+		sw:                sw,
+		addrBook:          addrBook,
+		nodeInfo:          nodeInfo,
+		nodeKey:           nodeKey,
+		proxyApp:          proxyApp,
+		pexReactor:        pexReactor,
 		dvsRequestIndexer: dvsRequestIndexer,
 		dvsReactor:        dvsReactor,
 		aggregatorReactor: aggregatorReactor,

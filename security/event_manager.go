@@ -68,6 +68,11 @@ func (em *EventManager) StartListening() {
 
 					// Extract the aggregated response from the event payload
 					res := event.Payload.(AggregatorResponse)
+
+					em.logger.Info("EventManager, got typed AggregatorResponse to send to OnRequestAfterAggregated",
+						"requestHash", res.requestHash,
+						"validateResponse", res.validateResponse,
+					)
 					// Forward to the DVS reactor for post-aggregation processing
 					if err := em.dvsReactor.OnRequestAfterAggregated(res.requestHash, res.validateResponse); err != nil {
 						em.logger.Error("failed to handle aggregator request", "error", err)

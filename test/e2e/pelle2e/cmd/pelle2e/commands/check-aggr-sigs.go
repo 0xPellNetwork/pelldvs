@@ -130,9 +130,9 @@ func _checkBLSAggrSig(cmd *cobra.Command) error {
 
 	logger.Info("RequestDVSAsync result", "resp", reqResp)
 
-	var secondsForRequestToBeProcessed time.Duration = 5
+	var secondsForRequestToBeProcessed = 5 * time.Second
 	logger.Info("⌛ waiting for the request to be processed", "seconds", secondsForRequestToBeProcessed)
-	time.Sleep(secondsForRequestToBeProcessed * time.Second)
+	time.Sleep(secondsForRequestToBeProcessed)
 
 	logger.Info("Querying request by using hash", "hash", reqResp.Hash.String())
 	taskResult, err := per.QueryRequest(ctx, reqResp.Hash.String())
@@ -153,7 +153,8 @@ func _checkBLSAggrSig(cmd *cobra.Command) error {
 	)
 
 	// test for search request result
-	request, err := per.SearchRequest(ctx, "SecondEventType.SecondEventKey='SecondEventValue'", nil, nil)
+	request, err := per.SearchRequest(ctx, "SecondEventType.SecondEventKey='SecondEventValue'",
+		nil, nil)
 	if err != nil {
 		logger.Error("SearchRequest failed",
 			"query", "SecondEventType.SecondEventKey='SecondEventValue'",
@@ -186,17 +187,17 @@ func _checkBLSAggrSig(cmd *cobra.Command) error {
 		return err
 	}
 
-	fmt.Println()
-	fmt.Println()
+	logger.Info("")
+	logger.Info("")
 
-	var secondsForNewBlocksToBeGenerated time.Duration = 2
+	var secondsForNewBlocksToBeGenerated = 5 * time.Second
 	logger.Info("⌛ wainting for new blocks to be generated",
 		"seconds", secondsForNewBlocksToBeGenerated,
 	)
-	time.Sleep(secondsForNewBlocksToBeGenerated * time.Second)
+	time.Sleep(secondsForNewBlocksToBeGenerated)
 
-	fmt.Println()
-	fmt.Println()
+	logger.Info("")
+	logger.Info("")
 
 	// verify BLS signatures on chain
 	logger.Info("Checking BLS signatures on chain after new blocks are generated")

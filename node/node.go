@@ -14,7 +14,7 @@ import (
 
 	"github.com/0xPellNetwork/pelldvs-interactor/interactor/reader"
 	"github.com/0xPellNetwork/pelldvs-libs/log"
-	"github.com/0xPellNetwork/pelldvs/aggregator"
+	aggtypes "github.com/0xPellNetwork/pelldvs/aggregator/types"
 	cfg "github.com/0xPellNetwork/pelldvs/config"
 	"github.com/0xPellNetwork/pelldvs/libs/service"
 	"github.com/0xPellNetwork/pelldvs/p2p"
@@ -113,7 +113,7 @@ func NewNode(config *cfg.Config,
 	nodeKey *p2p.NodeKey,
 	clientCreator proxy.ClientCreator,
 	dbProvider cfg.DBProvider,
-	aggregator aggregator.Aggregator,
+	aggregator aggtypes.Aggregator,
 	dvsReader reader.DVSReader,
 	metricsProvider MetricsProvider,
 	logger log.Logger,
@@ -131,7 +131,7 @@ func NewNodeWithContext(ctx context.Context,
 	nodeKey *p2p.NodeKey,
 	clientCreator proxy.ClientCreator,
 	requestIndexDBProvider cfg.DBProvider,
-	aggregator aggregator.Aggregator,
+	aggregator aggtypes.Aggregator,
 	dvsReader reader.DVSReader,
 	metricsProvider MetricsProvider,
 	logger log.Logger,

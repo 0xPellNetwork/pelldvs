@@ -8,7 +8,7 @@ import (
 	"github.com/0xPellNetwork/pelldvs-interactor/interactor/reader"
 	evmtypes "github.com/0xPellNetwork/pelldvs-interactor/types"
 	"github.com/0xPellNetwork/pelldvs-libs/log"
-	aggtypes "github.com/0xPellNetwork/pelldvs/aggregator"
+	aggtypes "github.com/0xPellNetwork/pelldvs/aggregator/types"
 	avsitypes "github.com/0xPellNetwork/pelldvs/avsi/types"
 	"github.com/0xPellNetwork/pelldvs/config"
 	"github.com/0xPellNetwork/pelldvs/proxy"
@@ -123,6 +123,9 @@ func (dvs *DVSReactor) HandleDVSRequest(request avsitypes.DVSRequest) error {
 					Error: err.Error(),
 				},
 			}
+
+			dvs.logger.Error("dvsReactor.HandleDVSRequest recover", "err", err.Error())
+
 			if err := dvs.SaveDVSRequestResult(&result, false); err != nil {
 				dvs.logger.Error("dvsReactor SaveDVSRequestResult", "err", err.Error())
 			}

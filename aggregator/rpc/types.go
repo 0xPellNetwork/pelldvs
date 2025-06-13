@@ -13,7 +13,7 @@ import (
 	"github.com/0xPellNetwork/pelldvs-interactor/interactor/reader"
 	"github.com/0xPellNetwork/pelldvs-interactor/types"
 	"github.com/0xPellNetwork/pelldvs-libs/log"
-	"github.com/0xPellNetwork/pelldvs/aggregator"
+	aggtypes "github.com/0xPellNetwork/pelldvs/aggregator/types"
 	"github.com/0xPellNetwork/pelldvs/libs/service"
 )
 
@@ -22,9 +22,9 @@ import (
 // state information needed for the aggregation process including operator
 // information, group mappings, and threshold requirements.
 type Task struct {
-	operatorResponses     map[types.OperatorID]aggregator.ResponseWithSignature
-	responsesChan         chan aggregator.ResponseWithSignature
-	done                  chan aggregator.ValidatedResponse
+	operatorResponses     map[types.OperatorID]aggtypes.ResponseWithSignature
+	responsesChan         chan aggtypes.ResponseWithSignature
+	done                  chan aggtypes.ValidatedResponse
 	timer                 *time.Timer
 	taskID                string
 	blockNumber           uint32
@@ -37,11 +37,11 @@ type Task struct {
 	thresholdPercentages  types.GroupThresholdPercentages
 }
 
-// RPCServerAggregator implements the Aggregator interface over RPC.
+// AggregatorRPCServer implements the Aggregator interface over RPC.
 // It manages signature collection tasks, provides thread-safe access to shared
 // resources, handles network communication, and coordinates the entire
 // aggregation workflow for distributed validation requests.
-type RPCServerAggregator struct {
+type AggregatorRPCServer struct {
 	service.BaseService
 	tasks                   map[string]*Task
 	tasksMutex              sync.RWMutex
@@ -52,7 +52,7 @@ type RPCServerAggregator struct {
 	rpcAddress              string
 	chainConfigs            map[uint64]*interactorcfg.DVSConfig
 	dvsReader               reader.DVSReader
-	Logger                  log.Logger
+	logger                  log.Logger
 }
 
 // ResultDigest represents a 32-byte hash of a response result.

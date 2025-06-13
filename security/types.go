@@ -3,7 +3,7 @@
 package security
 
 import (
-	"github.com/0xPellNetwork/pelldvs/aggregator"
+	"github.com/0xPellNetwork/pelldvs/aggregator/types"
 	avsitypes "github.com/0xPellNetwork/pelldvs/avsi/types"
 )
 
@@ -27,13 +27,13 @@ type ResponsePostRequest struct{}
 // RequestPostRequest contains the validated aggregated response
 // to be posted back to the requestor
 type RequestPostRequest struct {
-	Response aggregator.ValidatedResponse
+	Response types.ValidatedResponse
 }
 
 // DVSReqResponse represents the complete lifecycle of a DVS request,
 // including the original request, its validated response, and confirmation receipt
 type DVSReqResponse struct {
 	Request  avsitypes.DVSRequest
-	Response *aggregator.ValidatedResponse
+	Response *types.ValidatedResponse
 	Receipt  *ResponsePostRequest
 }

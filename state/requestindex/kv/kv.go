@@ -50,7 +50,6 @@ func (dvsReqIdx *DvsRequestIndex) SetLogger(l log.Logger) {
 }
 
 func (dvsReqIdx *DvsRequestIndex) GetEventSeq() (*big.Int, error) {
-
 	rawBytes, err := dvsReqIdx.store.Get([]byte(eventSeqKey))
 	if err != nil {
 		return nil, err

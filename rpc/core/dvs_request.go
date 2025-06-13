@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	avsiTypes "github.com/0xPellNetwork/pelldvs/avsi/types"
+	avsitypes "github.com/0xPellNetwork/pelldvs/avsi/types"
 	"github.com/0xPellNetwork/pelldvs/libs/bytes"
 	cmtmath "github.com/0xPellNetwork/pelldvs/libs/math"
 	cmtquery "github.com/0xPellNetwork/pelldvs/libs/query"
@@ -21,7 +21,7 @@ func (env *Environment) RequestDVS(ctx *rpctypes.Context,
 	groupNumbers []uint32,
 	groupThresholdPercentages []uint32,
 ) (*ctypes.ResultRequest, error) {
-	request := avsiTypes.DVSRequest{
+	request := avsitypes.DVSRequest{
 		Data:                      data,
 		Height:                    height,
 		ChainId:                   chainid,
@@ -44,7 +44,7 @@ func (env *Environment) RequestDVSAsync(ctx *rpctypes.Context,
 	groupNumbers []uint32,
 	groupThresholdPercentages []uint32,
 ) (*ctypes.ResultRequestDvsAsync, error) {
-	request := avsiTypes.DVSRequest{
+	request := avsitypes.DVSRequest{
 		Data:                      data,
 		Height:                    height,
 		ChainId:                   chainID,

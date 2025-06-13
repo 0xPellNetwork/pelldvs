@@ -130,7 +130,7 @@ func _checkBLSAggrSig(cmd *cobra.Command) error {
 
 	logger.Info("RequestDVSAsync result", "resp", reqResp)
 
-	var secondsForRequestToBeProcessed = 5 * time.Second
+	var secondsForRequestToBeProcessed = 10 * time.Second
 	logger.Info("⌛ waiting for the request to be processed", "seconds", secondsForRequestToBeProcessed)
 	time.Sleep(secondsForRequestToBeProcessed)
 

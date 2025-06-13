@@ -7,9 +7,12 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/0xPellNetwork/pelldvs/aggregator"
+	interactorcfg "github.com/0xPellNetwork/pelldvs-interactor/config"
+	aggcfg "github.com/0xPellNetwork/pelldvs/aggregator/config"
 	"github.com/0xPellNetwork/pelldvs/aggregator/rpc"
+	cfg "github.com/0xPellNetwork/pelldvs/config"
 	"github.com/0xPellNetwork/pelldvs/libs/cli"
+	"github.com/0xPellNetwork/pelldvs/utils"
 )
 
 const (
@@ -32,7 +35,7 @@ func init() {
 
 func init() {
 	StartAggregatorCmd.Flags().String(flagRPCAddress, "0.0.0.0:26653", "RPC server listen address")
-	StartAggregatorCmd.Flags().String(flagTimeout, "3s", "Aggregation operation timeout")
+	StartAggregatorCmd.Flags().String(flagTimeout, "5s", "Aggregation operation timeout")
 }
 
 // startAggregator implements the logic to start the aggregator
@@ -53,7 +56,7 @@ func runAggregatorService(cmd *cobra.Command) error {
 		aggregatorConfigFile = strings.TrimRight(homeDir, "/") + "/config/aggregator.json"
 	}
 
-	aggregatorConfig, err := aggregator.LoadConfig(aggregatorConfigFile)
+	aggregatorConfig, err := aggcfg.LoadConfig(aggregatorConfigFile)
 	if err != nil {
 		return fmt.Errorf("failed to load aggregator configuration: %v", err)
 	}
@@ -65,7 +68,28 @@ func runAggregatorService(cmd *cobra.Command) error {
 		aggregatorConfig.OperatorResponseTimeout = timeout
 	}
 
-	rpcAggregator, err := rpc.NewRPCServerAggregator(cmd.Context(), config, aggregatorConfig, logger)
+	ctx := cmd.Context()
+
+	db, err := cfg.DefaultDBProvider(&cfg.DBContext{
+		ID:     "indexer",
+		Config: config,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to init db: %v", err)
+	}
+
+	interactorConfig, err := interactorcfg.LoadConfig(config.Pell.InteractorConfigPath)
+	if err != nil {
+		return fmt.Errorf("failed to create interactor config from file: %v", err)
+	}
+
+	dvsReader, err := utils.CreateDVSReader(ctx, interactorConfig, db, logger)
+	if err != nil {
+		logger.Error("Failed to create DVS reader", "error", err)
+		return fmt.Errorf("failed to create DVS reader: %v", err)
+	}
+
+	rpcAggregator, err := rpc.NewAggregatorGRPCServer(ctx, aggregatorConfig, interactorConfig, config, dvsReader, logger)
 	if err != nil {
 		return fmt.Errorf("failed to create RPCAggregator: %v", err)
 	}

@@ -226,6 +226,17 @@ func (dvs *DVSReactor) HandleDVSRequest(request avsitypes.DVSRequest) error {
 // OnRequestAfterAggregated is called after the request is aggregated
 func (dvs *DVSReactor) OnRequestAfterAggregated(requestHash avsitypes.DVSRequestHash,
 	validatedResponse aggtypes.ValidatedResponse) error {
+	// recover from panic
+	defer func() {
+		if r := recover(); r != nil {
+			dvs.logger.Error("dvsReactor.OnRequestAfterAggregated panic",
+				"error", fmt.Sprintf("%v", r),
+				"requestHash", requestHash,
+				"validatedResponse", validatedResponse,
+			)
+		}
+	}()
+
 	dvs.logger.Info("dvsReactor.OnRequestAfterAggregated",
 		"requestHash", requestHash,
 		"validatedResponse", validatedResponse,
@@ -269,7 +280,7 @@ func (dvs *DVSReactor) OnRequestAfterAggregated(requestHash avsitypes.DVSRequest
 		)
 
 		result.DvsResponse = &avsitypes.DVSResponse{
-			Error: fmt.Sprintf("validatedResponse.SignersApkG2 or validatedResponse.SignersAggSigG1 is nil "),
+			Error: "validatedResponse.SignersApkG2 or validatedResponse.SignersAggSigG1 is nil ",
 		}
 
 		// Save result with error

@@ -55,6 +55,16 @@ type AggregatorResponse struct {
 func (ar *AggregatorReactor) HandleSignatureCollectionRequest(requestHash avsitypes.DVSRequestHash) error {
 	ar.logger.Info("HandleSignatureCollectionRequest", "requestHash", requestHash)
 
+	// recover from panic
+	defer func() {
+		if r := recover(); r != nil {
+			ar.logger.Error("HandleSignatureCollectionRequest panic",
+				"requestHash", requestHash,
+				"error", fmt.Sprintf("%v", r),
+			)
+		}
+	}()
+
 	// Get request from indexer
 	result, err := ar.dvsRequestIndexer.Get(requestHash)
 	if err != nil {

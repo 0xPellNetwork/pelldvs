@@ -41,6 +41,9 @@ function init_aggregator {
     "operator_response_timeout": "10s"
 }
 EOF
+
+cat $PELLDVS_HOME/config/aggregator.json
+
 }
 
 function start_aggregator {

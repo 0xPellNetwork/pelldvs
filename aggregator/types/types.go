@@ -1,4 +1,4 @@
-package aggregator
+package types
 
 import (
 	"github.com/0xPellNetwork/pelldvs-libs/crypto/bls"

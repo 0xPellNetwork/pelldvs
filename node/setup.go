@@ -12,7 +12,7 @@ import (
 
 	interactorcfg "github.com/0xPellNetwork/pelldvs-interactor/config"
 	"github.com/0xPellNetwork/pelldvs-libs/log"
-	aggRPC "github.com/0xPellNetwork/pelldvs/aggregator/rpc"
+	aggrpc "github.com/0xPellNetwork/pelldvs/aggregator/rpc"
 	avsi "github.com/0xPellNetwork/pelldvs/avsi/types"
 	cfg "github.com/0xPellNetwork/pelldvs/config"
 	"github.com/0xPellNetwork/pelldvs/p2p"
@@ -39,7 +39,7 @@ func DefaultNewNode(config *cfg.Config, logger log.Logger) (*Node, error) {
 		return nil, fmt.Errorf("failed to load or gen node key %s: %w", config.NodeKeyFile(), err)
 	}
 
-	aggregator, err := aggRPC.NewRPCClientAggregator(config.Pell.AggregatorRPCURL, logger)
+	aggregator, err := aggrpc.NewAggregatorRPCClient(config.Pell.AggregatorRPCURL, logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create RPCAggregator")
 	}

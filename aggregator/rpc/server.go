@@ -15,16 +15,17 @@ import (
 	dbm "github.com/cosmos/cosmos-db"
 
 	interactorcfg "github.com/0xPellNetwork/pelldvs-interactor/config"
+	"github.com/0xPellNetwork/pelldvs-interactor/interactor/reader"
 	"github.com/0xPellNetwork/pelldvs-interactor/types"
 	"github.com/0xPellNetwork/pelldvs-libs/crypto/bls"
 	"github.com/0xPellNetwork/pelldvs-libs/log"
-	"github.com/0xPellNetwork/pelldvs/aggregator"
+	aggcfg "github.com/0xPellNetwork/pelldvs/aggregator/config"
+	aggtypes "github.com/0xPellNetwork/pelldvs/aggregator/types"
 	avsitypes "github.com/0xPellNetwork/pelldvs/avsi/types"
 	"github.com/0xPellNetwork/pelldvs/config"
 	"github.com/0xPellNetwork/pelldvs/libs/service"
 	"github.com/0xPellNetwork/pelldvs/rpc/core/errcode"
 	rpctypes "github.com/0xPellNetwork/pelldvs/rpc/jsonrpc/types"
-	"github.com/0xPellNetwork/pelldvs/utils"
 )
 
 // DBContext holds the necessary information for initializing a database
@@ -45,55 +46,38 @@ func DefaultDBProvider(ctx *DBContext) (dbm.DB, error) {
 	return dbm.NewDB(ctx.ID, dbType, ctx.Config.DBDir())
 }
 
-// NewRPCServerAggregator creates a new instance of the RPC server aggregator
+// NewAggregatorGRPCServer creates a new instance of the RPC server aggregator
 // initializing all required components and connections
-func NewRPCServerAggregator(
+func NewAggregatorGRPCServer(
 	ctx context.Context,
+	aggConfig *aggcfg.AggregatorConfig,
+	interactorConfig *interactorcfg.Config,
 	cfg *config.Config,
-	aggConfig *aggregator.AggregatorConfig,
+	dvsReader reader.DVSReader,
 	logger log.Logger,
-) (*RPCServerAggregator, error) {
-	db, err := DefaultDBProvider(&DBContext{
-		ID:     "indexer",
-		Config: cfg,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to init db: %v", err)
-	}
-
-	interactorConfig, err := interactorcfg.LoadConfig(cfg.Pell.InteractorConfigPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create interactor config from file: %v", err)
-	}
-
-	dvsReader, err := utils.CreateDVSReader(ctx, interactorConfig, db, logger)
-	if err != nil {
-		logger.Error("Failed to create DVS reader", "error", err)
-		return nil, fmt.Errorf("failed to create DVS reader: %v", err)
-	}
-
-	timeout, err := aggConfig.GetOperatorResponseTimeout()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get operator response timeout: %v", err)
-	}
+) (*AggregatorRPCServer, error) {
+	timeout, _ := aggConfig.GetOperatorResponseTimeout()
 	tasksLocks := make(map[string]*sync.Mutex)
-	ra := &RPCServerAggregator{
+	ra := &AggregatorRPCServer{
 		tasks:                   make(map[string]*Task),
 		operatorResponseTimeout: timeout,
 		server:                  rpc.NewServer(),
 		rpcAddress:              aggConfig.AggregatorRPCServer,
 		chainConfigs:            interactorConfig.ContractConfig.DVSConfigs,
 		tasksLocks:              tasksLocks,
-		Logger:                  logger.With("module", "RPCServerAggregatorServer"),
+		logger:                  logger.With("module", "RPCServerAggregatorServer"),
 		dvsReader:               dvsReader,
 	}
-	ra.BaseService = *service.NewBaseService(nil, "RPCServerAggregator", ra)
+	ra.BaseService = *service.NewBaseService(nil, "AggregatorRPCServer", ra)
+
+	ra.logger.Info("NewAggregatorGRPCServer initialized", "timeout", ra.operatorResponseTimeout)
+
 	return ra, nil
 }
 
 // OnStart initializes and starts the RPC server
 // registering handlers and beginning to accept connections
-func (ra *RPCServerAggregator) OnStart() error {
+func (ra *AggregatorRPCServer) OnStart() error {
 	if err := ra.server.Register(ra); err != nil {
 		return fmt.Errorf("failed to register RPC handler: %v", err)
 	}
@@ -104,7 +88,7 @@ func (ra *RPCServerAggregator) OnStart() error {
 	}
 
 	ra.listener = listener
-	ra.Logger.Info("RPC server started", "address", ra.rpcAddress)
+	ra.logger.Info("RPC server started", "address", ra.rpcAddress)
 
 	go ra.server.Accept(listener)
 	return nil
@@ -112,19 +96,19 @@ func (ra *RPCServerAggregator) OnStart() error {
 
 // IsRunning checks if the server is currently running
 // implementing the service interface requirement
-func (ra *RPCServerAggregator) IsRunning() bool {
+func (ra *AggregatorRPCServer) IsRunning() bool {
 	return ra.BaseService.IsRunning()
 }
 
 // HealthCheck provides a simple health check for the RPC server
-func (ra *RPCServerAggregator) HealthCheck(_ struct{}, reply *bool) error {
+func (ra *AggregatorRPCServer) HealthCheck(_ struct{}, reply *bool) error {
 	*reply = ra.IsRunning()
 	return nil
 }
 
 // OnStop gracefully shuts down the RPC server
 // closing the network listener
-func (ra *RPCServerAggregator) OnStop() {
+func (ra *AggregatorRPCServer) OnStop() {
 	if ra.listener != nil {
 		ra.listener.Close()
 	}
@@ -132,9 +116,10 @@ func (ra *RPCServerAggregator) OnStop() {
 
 // CollectResponseSignature processes operator signature submissions
 // creating or updating tasks and managing the aggregation process
-func (ra *RPCServerAggregator) CollectResponseSignature(response *aggregator.ResponseWithSignature, result *aggregator.ValidatedResponse) error {
+func (ra *AggregatorRPCServer) CollectResponseSignature(response *aggtypes.ResponseWithSignature,
+	result *aggtypes.ValidatedResponse) error {
 	taskID := ra.generateTaskID(response.RequestData)
-	ra.Logger.Info("CollectResponseSignature start",
+	ra.logger.Info("CollectResponseSignature start",
 		"taskID", taskID, "operatorID", response.OperatorID,
 		"response", response,
 		"result", result,
@@ -173,26 +158,26 @@ func (ra *RPCServerAggregator) CollectResponseSignature(response *aggregator.Res
 
 		operatorsDvsStateDict, err := ra.dvsReader.GetOperatorsDVSStateAtBlock(chainID.Uint64(), groupNumbers, blockNumber)
 		if err != nil {
-			ra.Logger.Error("Failed to get operators DVS state", "block", blockNumber, "error", err)
+			ra.logger.Error("Failed to get operators DVS state", "block", blockNumber, "error", err)
 			return err
 		}
 
 		groupsDvsStateDict, err := ra.dvsReader.GetGroupsDVSStateAtBlock(chainID.Uint64(), groupNumbers, blockNumber)
 		if err != nil {
-			ra.Logger.Error("Failed to get groups DVS state", "block", blockNumber, "error", err)
+			ra.logger.Error("Failed to get groups DVS state", "block", blockNumber, "error", err)
 			return err
 		}
 
 		operatorStateInfo, err := ra.dvsReader.GetOperatorState(chainID.Uint64(), groupNumbers, blockNumber)
 		if err != nil {
-			ra.Logger.Error("Failed to get operator state", "error", err)
+			ra.logger.Error("Failed to get operator state", "error", err)
 			return fmt.Errorf("failed to get operator state: %v", err)
 		}
 
 		task = &Task{
-			operatorResponses:     make(map[types.OperatorID]aggregator.ResponseWithSignature),
-			responsesChan:         make(chan aggregator.ResponseWithSignature, len(operatorStateInfo.Operators)),
-			done:                  make(chan aggregator.ValidatedResponse, len(operatorStateInfo.Operators)),
+			operatorResponses:     make(map[types.OperatorID]aggtypes.ResponseWithSignature),
+			responsesChan:         make(chan aggtypes.ResponseWithSignature, len(operatorStateInfo.Operators)),
+			done:                  make(chan aggtypes.ValidatedResponse, len(operatorStateInfo.Operators)),
 			taskID:                taskID,
 			chainConfig:           chainConfig,
 			digestToOperators:     make(map[ResultDigest][]types.OperatorID),
@@ -204,19 +189,42 @@ func (ra *RPCServerAggregator) CollectResponseSignature(response *aggregator.Res
 			blockNumber:           blockNumber,
 		}
 		ra.tasks[taskID] = task
+
+		ra.logger.Info("New task created",
+			"taskID", taskID,
+			"chainID", chainID,
+			"blockNumber", blockNumber,
+			"groupNumbers", groupNumbers,
+			"thresholdPercentages", thresholdPercentages,
+			"operatorsCount", len(operatorStateInfo.Operators),
+			"operatorsDvsStateDict", operatorsDvsStateDict,
+			"groupsDvsStateDict", groupsDvsStateDict,
+			"operatorStateInfo", operatorStateInfo,
+		)
+		ra.logger.Info("Task created and we will finalize it after timeout",
+			"taskID", taskID,
+			"operatorResponseTimeout", ra.operatorResponseTimeout,
+		)
 		task.timer = time.AfterFunc(ra.operatorResponseTimeout, func() {
+			ra.logger.Info("Timer triggered, calling finalizeTask", "taskID", taskID, "timeout", ra.operatorResponseTimeout)
 			ra.finalizeTask(taskID)
 		})
 		go ra.processResponses(task)
 	} else {
-		ra.Logger.Info("Task already exists", "taskID", taskID)
+		ra.logger.Info("Task already exists", "taskID", taskID)
 	}
 
+	ra.logger.Info("Adding response to the shared channel",
+		"taskID", taskID, "operatorID", response.OperatorID)
 	task.responsesChan <- *response
+
+	ra.logger.Info("Waiting for task result",
+		"taskID", taskID, "operatorID", response.OperatorID)
 	validatedResponse := <-task.done
+
 	*result = validatedResponse
 
-	ra.Logger.Info("CollectResponseSignature done",
+	ra.logger.Info("CollectResponseSignature done",
 		"taskID", taskID,
 		"operatorID", response.OperatorID,
 		"result", result,
@@ -225,15 +233,19 @@ func (ra *RPCServerAggregator) CollectResponseSignature(response *aggregator.Res
 	return nil
 }
 
-func (ra *RPCServerAggregator) generateTaskID(request avsitypes.DVSRequest) string {
+func (ra *AggregatorRPCServer) generateTaskID(request avsitypes.DVSRequest) string {
 	return hex.EncodeToString(request.Hash())
 }
 
-func (ra *RPCServerAggregator) processResponses(task *Task) {
+func (ra *AggregatorRPCServer) processResponses(task *Task) {
+	ra.logger.Info("processResponses started", "taskID", task.taskID)
 	for response := range task.responsesChan {
+		ra.logger.Info("processResponses. Processing response",
+			"taskID", task.taskID, "operatorID", response.OperatorID)
+
 		_, err := ra.dvsReader.GetOperatorInfoByID(response.OperatorID)
 		if err != nil {
-			ra.Logger.Error("Failed to get operator info",
+			ra.logger.Error("Failed to get operator info",
 				"taskID", task.taskID, "operatorID", response.OperatorID,
 				"error", err,
 			)
@@ -242,11 +254,13 @@ func (ra *RPCServerAggregator) processResponses(task *Task) {
 
 		task.operatorResponses[response.OperatorID] = response
 		task.digestToOperators[response.Digest] = append(task.digestToOperators[response.Digest], response.OperatorID)
+		time.Sleep(1 * time.Second)
 	}
-	ra.Logger.Info("processResponses.done", "taskID", task.taskID)
+	ra.logger.Info("processResponses.done", "taskID", task.taskID)
 }
 
-func (ra *RPCServerAggregator) finalizeTask(taskID string) {
+func (ra *AggregatorRPCServer) finalizeTask(taskID string) {
+	ra.logger.Info("finalizeTask started", "taskID", taskID)
 	ra.tasksMutex.Lock()
 	defer ra.tasksMutex.Unlock()
 
@@ -260,9 +274,7 @@ func (ra *RPCServerAggregator) finalizeTask(taskID string) {
 	aggregatedResult, err := ra.aggregateSignatures(task)
 	if err != nil {
 		// Log with more context including the task ID
-		ra.Logger.Error("Failed to aggregate signatures",
-			"taskID", taskID,
-			"error", err)
+		ra.logger.Error("Failed to aggregate signatures", "taskID", taskID, "error", err)
 
 		// Create a more detailed error response with the original error message
 		aggregatedResult = ra.createErrorValidatedResponse(taskID, &rpctypes.RPCError{
@@ -274,7 +286,7 @@ func (ra *RPCServerAggregator) finalizeTask(taskID string) {
 
 	for operatorID := range task.operatorResponses {
 		task.done <- *aggregatedResult
-		ra.Logger.Info("Task finalizeTask task.done for", "taskID", taskID, "operatorID", operatorID)
+		ra.logger.Info("Task finalizeTask task.done for", "taskID", taskID, "operatorID", operatorID)
 	}
 
 	close(task.done)
@@ -282,11 +294,12 @@ func (ra *RPCServerAggregator) finalizeTask(taskID string) {
 
 	delete(ra.tasks, taskID)
 
-	ra.Logger.Info("Task deleted", "taskID", taskID)
+	ra.logger.Info("Task deleted", "taskID", taskID)
 }
 
-func (ra *RPCServerAggregator) createErrorValidatedResponse(taskID string, err *rpctypes.RPCError) *aggregator.ValidatedResponse {
-	return &aggregator.ValidatedResponse{
+func (ra *AggregatorRPCServer) createErrorValidatedResponse(taskID string,
+	err *rpctypes.RPCError) *aggtypes.ValidatedResponse {
+	return &aggtypes.ValidatedResponse{
 		Data:                        []byte{},
 		Err:                         err,
 		Hash:                        []byte(taskID),
@@ -301,8 +314,8 @@ func (ra *RPCServerAggregator) createErrorValidatedResponse(taskID string, err *
 	}
 }
 
-func (ra *RPCServerAggregator) aggregateSignatures(task *Task) (*aggregator.ValidatedResponse, error) {
-	ra.Logger.Info("aggregateSignatures.start", "taskID", task.taskID)
+func (ra *AggregatorRPCServer) aggregateSignatures(task *Task) (*aggtypes.ValidatedResponse, error) {
+	ra.logger.Info("aggregateSignatures.start", "taskID", task.taskID)
 	if len(task.operatorResponses) == 0 {
 		return nil, errors.New("no signatures to aggregate")
 	}
@@ -332,16 +345,16 @@ func (ra *RPCServerAggregator) aggregateSignatures(task *Task) (*aggregator.Vali
 			if ra.checkIfStakeThresholdsMet(signersTotalStakePerGroup, totalStakePerGroup, thresholdPercentagesMap) {
 				selectedDigest = digest
 				selectedData = task.operatorResponses[operators[0]].Data
-				ra.Logger.Debug("Selected digest for aggregation checkIfStakeThresholdsMet", "digest", selectedDigest)
+				ra.logger.Debug("Selected digest for aggregation checkIfStakeThresholdsMet", "digest", selectedDigest)
 				break
 			} else {
-				ra.Logger.Error("stake thresholds not met for digest", "digest", digest)
+				ra.logger.Error("stake thresholds not met for digest", "digest", digest)
 				return nil, fmt.Errorf("stake thresholds not met for digest: %v", digest)
 			}
 		}
 	}
 
-	ra.Logger.Debug("Selected digest for aggregation", "digest", selectedDigest)
+	ra.logger.Debug("Selected digest for aggregation", "digest", selectedDigest)
 
 	aggregatedSignature := bls.NewZeroSignature()
 	signersApkG2 := bls.NewZeroG2Point()
@@ -383,12 +396,16 @@ func (ra *RPCServerAggregator) aggregateSignatures(task *Task) (*aggregator.Vali
 		}
 	}
 
-	ra.Logger.Debug("All registered operators in groups",
+	ra.logger.Debug("All registered operators in groups",
 		"operatorCount", len(registeredOperators),
-		"operators", registeredOperators)
+		"operators", registeredOperators,
+	)
 
 	for addrOperatorID := range registeredOperators {
-		if _, signed := task.operatorResponses[addrOperatorID]; !signed || task.operatorResponses[addrOperatorID].Digest != selectedDigest {
+		ra.logger.Debug("Checking operator", "operatorID", addrOperatorID)
+
+		if _, signed := task.operatorResponses[addrOperatorID]; !signed ||
+			task.operatorResponses[addrOperatorID].Digest != selectedDigest {
 			isInActiveGroup := false
 			for groupNum := range task.groupNumbers {
 				if activeGroups[types.GroupNumber(groupNum)] {
@@ -413,7 +430,7 @@ func (ra *RPCServerAggregator) aggregateSignatures(task *Task) (*aggregator.Vali
 	for _, blsOperatorID := range nonSignersOperatorIds {
 		operator, ok := operatorMapByBLSOperatorID[blsOperatorID]
 		if !ok {
-			ra.Logger.Error("Operator not found by blsOperatorID", "blsOperatorID", blsOperatorID)
+			ra.logger.Error("Operator not found by blsOperatorID", "blsOperatorID", blsOperatorID)
 			continue
 		}
 		nonSignersPubkeysG1 = append(nonSignersPubkeysG1, operator.Pubkeys.G1Pubkey)
@@ -428,10 +445,10 @@ func (ra *RPCServerAggregator) aggregateSignatures(task *Task) (*aggregator.Vali
 	if err != nil {
 		return nil, fmt.Errorf("failed to get check signatures indices: %v", err)
 	}
-	ra.Logger.Debug("aggregateSignatures.indices", "indices", indices)
+	ra.logger.Debug("aggregateSignatures.indices", "indices", indices)
 
-	ra.Logger.Info("Task aggregation completed successfully", "taskHash", task.taskID, "data", selectedData)
-	ra.Logger.Debug("Aggregated response details",
+	ra.logger.Info("Task aggregation completed successfully", "taskHash", task.taskID, "data", selectedData)
+	ra.logger.Debug("Aggregated response details",
 		"nonSignersPubkeysG1Count", len(nonSignersPubkeysG1),
 		"groupApksG1Count", len(groupApksG1),
 		"signersApkG2", signersApkG2,
@@ -441,7 +458,7 @@ func (ra *RPCServerAggregator) aggregateSignatures(task *Task) (*aggregator.Vali
 		"totalStakeIndices", indices.TotalStakeIndices,
 		"nonSignerStakeIndicesCount", len(indices.NonSignerStakeIndices),
 	)
-	result := &aggregator.ValidatedResponse{
+	result := &aggtypes.ValidatedResponse{
 		Err:                         nil,
 		Hash:                        []byte(task.taskID),
 		NonSignersPubkeysG1:         nonSignersPubkeysG1,
@@ -455,12 +472,12 @@ func (ra *RPCServerAggregator) aggregateSignatures(task *Task) (*aggregator.Vali
 		Data:                        selectedData,
 	}
 
-	ra.Logger.Info("aggregateSignatures.result", "result", result)
+	ra.logger.Info("aggregateSignatures.result", "result", result)
 
 	return result, nil
 }
 
-func (ra *RPCServerAggregator) checkIfStakeThresholdsMet(
+func (ra *AggregatorRPCServer) checkIfStakeThresholdsMet(
 	signedStakePerGroup map[types.GroupNumber]*big.Int,
 	totalStakePerGroup map[types.GroupNumber]*big.Int,
 	groupThresholdPercentagesMap map[types.GroupNumber]types.GroupThresholdPercentage,

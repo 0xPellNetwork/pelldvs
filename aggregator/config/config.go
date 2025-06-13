@@ -1,4 +1,4 @@
-package aggregator
+package config
 
 import (
 	"encoding/json"
@@ -7,6 +7,10 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+)
+
+const (
+	DefaultOperatorResponseTimeout = 5 * time.Second
 )
 
 // ChainID represents a unique identifier for a blockchain network
@@ -50,5 +54,12 @@ func LoadConfig(filePath string) (*AggregatorConfig, error) {
 // This allows the timeout value to be used directly in timing operations,
 // parsing the string format into a proper duration object.
 func (c *AggregatorConfig) GetOperatorResponseTimeout() (time.Duration, error) {
-	return time.ParseDuration(c.OperatorResponseTimeout)
+	timeout, err := time.ParseDuration(c.OperatorResponseTimeout)
+	if err != nil {
+		return DefaultOperatorResponseTimeout, fmt.Errorf("invalid operator response timeout: %v", err)
+	}
+	if timeout < DefaultOperatorResponseTimeout {
+		timeout = DefaultOperatorResponseTimeout
+	}
+	return timeout, nil
 }

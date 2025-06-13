@@ -8,24 +8,24 @@ import (
 
 	"github.com/0xPellNetwork/pelldvs-interactor/libs/clientmanager/rpcclientmanager"
 	"github.com/0xPellNetwork/pelldvs-libs/log"
-	aggTypes "github.com/0xPellNetwork/pelldvs/aggregator"
+	aggtypes "github.com/0xPellNetwork/pelldvs/aggregator/types"
 )
 
 const (
-	RPCHealthCheckMethod      = "RPCServerAggregator.HealthCheck"
-	RPCServerAggregatorMethod = "RPCServerAggregator.CollectResponseSignature"
+	RPCHealthCheckMethod      = "AggregatorRPCServer.HealthCheck"
+	RPCServerAggregatorMethod = "AggregatorRPCServer.CollectResponseSignature"
 )
 
-// RPCClientAggregator provides a client implementation of the Aggregator interface
+// AggregatorRPCClient provides a client implementation of the Aggregator interface
 // communicating with the aggregator service over RPC
-type RPCClientAggregator struct {
+type AggregatorRPCClient struct {
 	clientManager *rpcclientmanager.RPCClientManager // Use RPCClientManager for connection management
 	logger        log.Logger
 }
 
-// NewRPCClientAggregator creates a new client instance connected to the specified address
+// NewAggregatorRPCClient creates a new client instance connected to the specified address
 // establishing a connection to the aggregator RPC server
-func NewRPCClientAggregator(address string, logger log.Logger) (*RPCClientAggregator, error) {
+func NewAggregatorRPCClient(address string, logger log.Logger) (*AggregatorRPCClient, error) {
 	manager, err := rpcclientmanager.NewRPCClientManager(
 		address,
 		logger,
@@ -35,7 +35,7 @@ func NewRPCClientAggregator(address string, logger log.Logger) (*RPCClientAggreg
 		return nil, fmt.Errorf("failed to connect to aggregator: %v", err)
 	}
 
-	return &RPCClientAggregator{
+	return &AggregatorRPCClient{
 		clientManager: manager,
 		logger:        logger,
 	}, nil
@@ -43,15 +43,18 @@ func NewRPCClientAggregator(address string, logger log.Logger) (*RPCClientAggreg
 
 // CollectResponseSignature implements the Aggregator interface by forwarding the request
 // to the RPC server and receiving the validated response
-func (ra *RPCClientAggregator) CollectResponseSignature(response *aggTypes.ResponseWithSignature, validatedResponseCh chan<- aggTypes.ValidatedResponse) error {
-	var result aggTypes.ValidatedResponse
+func (ra *AggregatorRPCClient) CollectResponseSignature(responseWithSignature *aggtypes.ResponseWithSignature,
+	validatedResponseCh chan<- aggtypes.ValidatedResponse) error {
+	var result aggtypes.ValidatedResponse
 	ctx := context.Background()
 	client, err := ra.clientManager.GetClient(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get RPC client: %v", err)
 	}
-	ra.logger.Info("AggregatorClient: Calling RPC method to collect response signature", "response", response)
-	err = client.Call(RPCServerAggregatorMethod, response, &result)
+	ra.logger.Info("AggregatorClient: Calling RPC method to collect responseWithSignature signature",
+		"ResponseWithSignature", responseWithSignature,
+	)
+	err = client.Call(RPCServerAggregatorMethod, responseWithSignature, &result)
 
 	if errors.Is(err, rpc.ErrShutdown) {
 		// If the client is shutdown, try to reconnect
@@ -60,7 +63,7 @@ func (ra *RPCClientAggregator) CollectResponseSignature(response *aggTypes.Respo
 		if err != nil {
 			return fmt.Errorf("failed to get RPC client after shutdown: %v", err)
 		}
-		err = client.Call(RPCServerAggregatorMethod, response, &result)
+		err = client.Call(RPCServerAggregatorMethod, responseWithSignature, &result)
 	}
 
 	if err != nil {
@@ -71,14 +74,14 @@ func (ra *RPCClientAggregator) CollectResponseSignature(response *aggTypes.Respo
 		return fmt.Errorf("aggregator returned error: %v", result.Err)
 	}
 
-	ra.logger.Info("AggregatorClient: Received validated response", "result", result)
+	ra.logger.Info("AggregatorClient: Received validated responseWithSignature", "result", result)
 	validatedResponseCh <- result
-	ra.logger.Info("AggregatorClient: Sent validated response to channel")
+	ra.logger.Info("AggregatorClient: Sent validated responseWithSignature to channel")
 	return nil
 }
 
 // HealthCheck performs a health check on the aggregator service
-func (ra *RPCClientAggregator) HealthCheck() (bool, error) {
+func (ra *AggregatorRPCClient) HealthCheck() (bool, error) {
 	var result bool
 	client, err := ra.clientManager.GetClient(context.Background())
 	if err != nil {

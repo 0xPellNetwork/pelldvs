@@ -5,7 +5,7 @@ import (
 
 	"github.com/0xPellNetwork/pelldvs-libs/crypto/bls"
 	"github.com/0xPellNetwork/pelldvs-libs/log"
-	aggtypes "github.com/0xPellNetwork/pelldvs/aggregator"
+	aggtypes "github.com/0xPellNetwork/pelldvs/aggregator/types"
 	avsitypes "github.com/0xPellNetwork/pelldvs/avsi/types"
 	"github.com/0xPellNetwork/pelldvs/state/requestindex"
 	"github.com/0xPellNetwork/pelldvs/types"
@@ -14,7 +14,7 @@ import (
 // AggregatorReactor handles the collection and aggregation of response signatures
 // from operators, interfacing between the DVS system and the aggregator service
 type AggregatorReactor struct {
-	aggregator        aggtypes.Aggregator
+	aggClient         aggtypes.Aggregator
 	dvsRequestIndexer requestindex.DvsRequestIndexer
 	privValidator     types.PrivValidator
 	dvsState          *DVSState
@@ -25,7 +25,7 @@ type AggregatorReactor struct {
 // CreateAggregatorReactor initializes a new AggregatorReactor with all required dependencies
 // to handle signature collection and aggregation operations
 func CreateAggregatorReactor(
-	aggregator aggtypes.Aggregator,
+	aggClient aggtypes.Aggregator,
 	dvsRequestIndexer requestindex.DvsRequestIndexer,
 	privValidator types.PrivValidator,
 	dvsState *DVSState,
@@ -33,7 +33,7 @@ func CreateAggregatorReactor(
 	eventManager *EventManager,
 ) *AggregatorReactor {
 	return &AggregatorReactor{
-		aggregator:        aggregator,
+		aggClient:         aggClient,
 		dvsRequestIndexer: dvsRequestIndexer,
 		privValidator:     privValidator,
 		dvsState:          dvsState,
@@ -88,12 +88,14 @@ func (ar *AggregatorReactor) HandleSignatureCollectionRequest(requestHash avsity
 	// Create a channel to receive validated response
 	validatedResponseCh := make(chan aggtypes.ValidatedResponse, 1)
 
+	ar.logger.Info("HandleSignatureCollectionRequest, call CollectResponseSignature",
+		"responseWithSignature", responseWithSignature,
+	)
 	// Send response signature to aggregator and wait for result
-	if err = ar.aggregator.CollectResponseSignature(&responseWithSignature, validatedResponseCh); err != nil {
+	if err = ar.aggClient.CollectResponseSignature(&responseWithSignature, validatedResponseCh); err != nil {
 		ar.logger.Error("Failed to send response signature to aggregator", "error", err)
 		return fmt.Errorf("failed to send response signature to aggregator: %v", err)
 	}
-
 	ar.logger.Info("HandleSignatureCollectionRequest, CollectResponseSignature done")
 
 	// Create an aggregator response with the validated result

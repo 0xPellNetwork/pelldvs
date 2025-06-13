@@ -259,6 +259,28 @@ func (dvs *DVSReactor) OnRequestAfterAggregated(requestHash avsitypes.DVSRequest
 		return fmt.Errorf("request validation failed: %w", validatedResponse.Err)
 	}
 
+	// check if the validatedResponse is real valid
+	if validatedResponse.SignersApkG2 == nil ||
+		validatedResponse.SignersAggSigG1 == nil ||
+		len(validatedResponse.GroupApksG1) == 0 {
+		dvs.logger.Error("validatedResponse.SignersApkG2 or validatedResponse.SignersAggSigG1 or "+
+			"len(validatedResponse.GroupApksG1) is nil",
+			"validatedResponse", validatedResponse,
+		)
+
+		result.DvsResponse = &avsitypes.DVSResponse{
+			Error: fmt.Sprintf("validatedResponse.SignersApkG2 or validatedResponse.SignersAggSigG1 is nil "),
+		}
+
+		// Save result with error
+		if err := dvs.SaveDVSRequestResult(result, false); err != nil {
+			return fmt.Errorf("failed to save error response: %w", err)
+		}
+
+		// Return the original validation error to propagate it upward
+		return fmt.Errorf("request validation failed: %s", result.DvsResponse.Error)
+	}
+
 	// Build dvs response
 	publicG1 := make([][]byte, 0, len(validatedResponse.NonSignersPubkeysG1))
 	for _, v := range validatedResponse.NonSignersPubkeysG1 {

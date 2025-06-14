@@ -77,6 +77,9 @@ setup_operator_config
 if [ ! -f /root/operator_initialized ]; then
   logt "Init operator"
   source "$(dirname "$0")/init_operator.sh"
+
+	sleep 15
+
   touch /root/operator_initialized
 fi
 

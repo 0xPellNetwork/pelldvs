@@ -130,7 +130,7 @@ func _checkBLSAggrSig(cmd *cobra.Command) error {
 
 	logger.Info("RequestDVSAsync result", "resp", reqResp)
 
-	var secondsForRequestToBeProcessed = 10 * time.Second
+	var secondsForRequestToBeProcessed = 15 * time.Second
 	logger.Info("⌛ waiting for the request to be processed", "seconds", secondsForRequestToBeProcessed)
 	time.Sleep(secondsForRequestToBeProcessed)
 
@@ -190,7 +190,7 @@ func _checkBLSAggrSig(cmd *cobra.Command) error {
 	logger.Info("")
 	logger.Info("")
 
-	var secondsForNewBlocksToBeGenerated = 5 * time.Second
+	var secondsForNewBlocksToBeGenerated = 2 * time.Second
 	logger.Info("⌛ wainting for new blocks to be generated",
 		"seconds", secondsForNewBlocksToBeGenerated,
 	)

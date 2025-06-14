@@ -12,8 +12,6 @@ import (
 	"sync"
 	"time"
 
-	dbm "github.com/cosmos/cosmos-db"
-
 	interactorcfg "github.com/0xPellNetwork/pelldvs-interactor/config"
 	"github.com/0xPellNetwork/pelldvs-interactor/interactor/reader"
 	"github.com/0xPellNetwork/pelldvs-interactor/types"
@@ -28,24 +26,6 @@ import (
 	rpctypes "github.com/0xPellNetwork/pelldvs/rpc/jsonrpc/types"
 )
 
-// DBContext holds the necessary information for initializing a database
-// including configuration and identifier
-type DBContext struct {
-	ID     string
-	Config *config.Config
-}
-
-// DBProvider defines a function type that creates and returns a database
-// based on the provided context
-type DBProvider func(*DBContext) (dbm.DB, error)
-
-// DefaultDBProvider creates a database using the configuration specified in the context
-// implementing the standard database initialization process
-func DefaultDBProvider(ctx *DBContext) (dbm.DB, error) {
-	dbType := dbm.BackendType(ctx.Config.DBBackend)
-	return dbm.NewDB(ctx.ID, dbType, ctx.Config.DBDir())
-}
-
 // NewAggregatorGRPCServer creates a new instance of the RPC server aggregator
 // initializing all required components and connections
 func NewAggregatorGRPCServer(
@@ -56,7 +36,7 @@ func NewAggregatorGRPCServer(
 	dvsReader reader.DVSReader,
 	logger log.Logger,
 ) (*AggregatorRPCServer, error) {
-	timeout, _ := aggConfig.GetOperatorResponseTimeout()
+	timeout, _ := aggConfig.GetOperatorResponseTimeout(logger)
 	tasksLocks := make(map[string]*sync.Mutex)
 	ra := &AggregatorRPCServer{
 		tasks:                   make(map[string]*Task),

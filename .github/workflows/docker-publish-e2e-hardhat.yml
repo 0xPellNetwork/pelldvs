@@ -20,7 +20,7 @@ jobs:
       IMAGE_NAME: pellnetwork/pelldvs-e2e-hardhat
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
           submodules: true

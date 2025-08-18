@@ -19,7 +19,7 @@ jobs:
       EMULATOR_HOST_PORT: ${{ vars.EMULATOR_HOST_PORT }}
       ETH_HOST_PORT: ${{ vars.ETH_HOST_PORT }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Stop services first
         working-directory: test/e2e
         run: make docker-down

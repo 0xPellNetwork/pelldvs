@@ -22,7 +22,7 @@ jobs:
         with:
           go-version: "1.23"
           cache: false
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: private
         run: git config --global url."https://${GITHUB_TOKEN}:x-oauth-basic@github.com/0xPellNetwork".insteadOf "https://github.com/0xPellNetwork"
       - name: Run Go Tests
